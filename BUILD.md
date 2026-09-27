@@ -260,6 +260,21 @@ https://daicho.<サブドメイン>.workers.dev/api/drive/callback
 
 これは Worker の実行時の変数です。手順 3 のビルド用の変数 (`D1_DATABASE_ID`) とは別の欄です。
 
+> **登録する場所に注意してください。** 設定画面には、変数の欄が 2 つあります。
+>
+> | 欄 | 場所 | 登録するもの |
+> |---|---|---|
+> | 実行時 | **Settings** → **Variables and Secrets** | `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`、LLM の API キー |
+> | ビルド用 | **Settings** → **Builds** → **Variables and secrets** | `D1_DATABASE_ID` だけ |
+>
+> ビルド用の欄に登録しても、Worker からは読めません。また、Type を **Text** にすると、次のデプロイで消えます。必ず **Secret** を選んでください。
+
+登録できたかどうかは、ターミナルで確認できます。名前だけが表示され、値は表示されません。
+
+```bash
+npx wrangler secret list --name daicho
+```
+
 ### 8-5. Daicho から接続する
 
 1. Daicho で論文を開き、詳細パネルの **PDF** にある **Google Drive に接続** を押す
@@ -318,7 +333,7 @@ GitHub の Web 画面でファイルを編集してコミットした場合も�
 | 画面は出るが一覧が読み込めない | マイグレーションが未適用。Deploy command が表のとおりか確認し、再デプロイする |
 | 「ログインセッションが切れました」と表示される | Access のセッション切れ。ページを再読み込みしてログインし直す |
 | 概要生成がエラーになる | API キーの名前と Type (Secret) を確認する (手順 6) |
-| PDF 欄に「Google Drive の設定が必要です」と出る | `GOOGLE_CLIENT_ID` と `GOOGLE_CLIENT_SECRET` を Secret として登録し、Deploy する (手順 8-4) |
+| PDF 欄に「Google Drive の設定が必要です」と出る | Worker が `GOOGLE_CLIENT_ID` か `GOOGLE_CLIENT_SECRET` を読めていない。ビルド用の欄ではなく、実行時の **Variables and Secrets** に、Type **Secret** で登録して Deploy する (手順 8-4)。登録後はページを再読み込みする |
 | Google の画面で `redirect_uri_mismatch` と出る | 承認済みのリダイレクト URI が、アプリの URL + `/api/drive/callback` と完全に一致しているか確認する (手順 8-3) |
 | 数日で「接続が切れています」と出る | 同意画面が「テスト中」のまま。本番環境に公開してから接続し直す (手順 8-2) |
 | PDF の送信が途中で失敗する | 通信を確認してやり直す。送信先の URL は 1 回ごとに発行するので、やり直しで問題ありません |
