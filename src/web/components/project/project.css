@@ -1,0 +1,108 @@
+/* 計画 C: プロジェクトワークスペースのスタイル。styles.css (計画 B) の変数を使い、無い場合の既定値も書く。 */
+
+/* ---------- カンバン ---------- */
+.kb { display: grid; grid-template-columns: repeat(4, minmax(140px, 1fr)); gap: 12px; align-items: stretch; overflow-x: auto; padding-bottom: 8px; }
+.kb.kb-busy { opacity: .85; }
+.kb-col { display: flex; flex-direction: column; min-height: 260px; background: var(--line-soft, #E8E5DC); border-radius: 6px; padding: 8px; }
+.kb-head { display: flex; justify-content: space-between; align-items: center; padding: 2px 4px 8px; font-size: 12.5px; font-weight: 700; letter-spacing: .05em; }
+.kb-col.c気になる .kb-head { color: #8A6D1D; }
+.kb-col.c引用候補 .kb-head { color: #7A4E9E; }
+.kb-col.c引用する .kb-head { color: var(--r-done, #2E6B4F); }
+.kb-col.c引用しない .kb-head { color: var(--ink-soft, #5B6B85); }
+.kb-n { font-family: "SFMono-Regular", Consolas, "Courier New", monospace; font-size: 11px; font-weight: 400; color: var(--ink-soft, #5B6B85); }
+.kb-list { flex: 1; display: flex; flex-direction: column; gap: 6px; min-height: 60px; padding-bottom: 28px; border-radius: 4px; }
+.kb-list.drop-end { box-shadow: inset 0 -3px 0 var(--focus, #2F6FD0); }
+.kb-empty { color: var(--ink-soft, #5B6B85); font-size: 11.5px; text-align: center; padding: 18px 0; border: 1px dashed var(--line, #DAD6CA); border-radius: 4px; }
+.kb-card { background: var(--card, #fff); border: 1px solid var(--line, #DAD6CA); border-radius: 4px; padding: 8px 10px; cursor: grab; font-size: 12.5px; line-height: 1.45; }
+.kb-card:hover { border-color: var(--ink, #1F2C46); }
+.kb-card:focus-visible { outline: 2px solid var(--focus, #2F6FD0); outline-offset: 1px; }
+.kb-card.on { border-color: var(--focus, #2F6FD0); box-shadow: 0 0 0 1px var(--focus, #2F6FD0); }
+.kb-card.dragging { opacity: .4; }
+.kb-card.drop-before { box-shadow: 0 -3px 0 var(--focus, #2F6FD0); }
+.kb-card.drop-after { box-shadow: 0 3px 0 var(--focus, #2F6FD0); }
+.kb-title { font-weight: 700; overflow-wrap: anywhere; }
+.kb-star { color: #C08A1E; margin-right: 4px; }
+.kb-meta { margin-top: 2px; color: var(--ink-soft, #5B6B85); font-size: 11px; font-family: "SFMono-Regular", Consolas, "Courier New", monospace; }
+.kb-memo { margin-top: 4px; color: var(--ink-soft, #5B6B85); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- 共通ボタン (C 内のみ) ---------- */
+.pv-btn { border: 1px solid var(--line, #DAD6CA); background: var(--card, #fff); color: var(--ink, #1F2C46); padding: 5px 12px; border-radius: 4px; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+.pv-btn:hover { border-color: var(--ink, #1F2C46); }
+.pv-btn.primary { background: var(--ink, #1F2C46); border-color: var(--ink, #1F2C46); color: #fff; }
+.pv-btn.primary:hover { background: #33456B; }
+.pv-btn:disabled { opacity: .5; cursor: default; }
+
+/* ---------- 右パネル ---------- */
+.pp { display: flex; flex-direction: column; border-left: 1px solid var(--line, #DAD6CA); background: var(--card, #fff); min-height: 0; overflow-y: auto; }
+.pp-note { padding: 14px 16px; border-bottom: 1px solid var(--line-soft, #E8E5DC); }
+.pp-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.pp-head h3 { margin: 0; font-size: 11px; letter-spacing: .14em; color: var(--ink-soft, #5B6B85); font-weight: 700; }
+.pp-status { font-size: 11px; color: var(--ink-soft, #5B6B85); }
+.pp-status.saved { color: var(--r-done, #2E6B4F); }
+.pp-status.dirty { color: var(--r-skim, #C08A1E); }
+.pp-note textarea { width: 100%; min-height: 140px; resize: vertical; border: 1px solid var(--line, #DAD6CA); border-radius: 4px; padding: 8px; font: inherit; font-size: 13px; line-height: 1.6; background: var(--paper, #F7F6F1); color: var(--ink, #1F2C46); }
+.pp-note textarea:focus { outline: 2px solid var(--focus, #2F6FD0); outline-offset: -1px; background: var(--card, #fff); }
+.pp-detail { flex: 1; min-height: 0; }
+/* 計画 B の DetailPanel (ライブラリでは幅 360px・枠・sticky の右列) を右パネル下段に収める */
+.pp-detail .detail-panel { width: auto; margin: 0; border: 0; border-radius: 0; position: static; max-height: none; overflow: visible; }
+.pp-hint { padding: 24px 16px; color: var(--ink-soft, #5B6B85); font-size: 12.5px; }
+
+/* ---------- 論文を追加 ---------- */
+.aep { position: relative; }
+.aep-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; width: min(520px, 90vw); background: var(--card, #fff); border: 1px solid var(--line, #DAD6CA); border-radius: 6px; box-shadow: 0 8px 24px rgba(31,44,70,.18); padding: 10px; }
+.aep-q { width: 100%; padding: 7px 10px; border: 1px solid var(--line, #DAD6CA); border-radius: 4px; font: inherit; font-size: 13px; }
+.aep-q:focus { outline: 2px solid var(--focus, #2F6FD0); outline-offset: -1px; }
+.aep-list { list-style: none; margin: 8px 0; padding: 0; max-height: 320px; overflow-y: auto; }
+.aep-item { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: baseline; padding: 6px 8px; border-radius: 4px; cursor: pointer; font-size: 12.5px; }
+.aep-item.cur { background: var(--line-soft, #E8E5DC); }
+.aep-item[aria-selected="true"] .aep-t { font-weight: 700; }
+.aep-t { overflow-wrap: anywhere; }
+.aep-sub { grid-column: 2; color: var(--ink-soft, #5B6B85); font-size: 11px; }
+.aep-none { padding: 14px 8px; color: var(--ink-soft, #5B6B85); font-size: 12px; text-align: center; }
+.aep-foot { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.aep-hint { flex: 1; color: var(--ink-soft, #5B6B85); font-size: 11px; }
+
+/* ---------- テーブル表示 ---------- */
+.ptab-wrap { overflow-x: auto; border: 1px solid var(--line, #DAD6CA); border-radius: 4px; background: var(--card, #fff); }
+.ptab { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.ptab th { background: var(--paper, #F7F6F1); text-align: left; font-size: 11px; letter-spacing: .06em; color: var(--ink-soft, #5B6B85); font-weight: 700; padding: 7px 8px; border-bottom: 1px solid var(--line, #DAD6CA); white-space: nowrap; }
+.ptab td { padding: 6px 8px; border-bottom: 1px solid var(--line-soft, #E8E5DC); vertical-align: top; }
+.ptab tbody tr { cursor: pointer; }
+.ptab tbody tr:hover { background: var(--line-soft, #E8E5DC); }
+.ptab tbody tr.on { background: #E3ECFA; }
+.ptab-star { color: #C08A1E; width: 1.5em; }
+.ptab-title { font-weight: 700; min-width: 240px; }
+.ptab-mono { font-family: "SFMono-Regular", Consolas, "Courier New", monospace; font-size: 11.5px; white-space: nowrap; }
+.ptab-tags { color: var(--ink-soft, #5B6B85); font-size: 11.5px; }
+.ptab-memo { max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-soft, #5B6B85); }
+.ptab-cite { font: inherit; font-size: 12px; padding: 2px 4px; border: 1px solid var(--line, #DAD6CA); border-radius: 4px; background: var(--card, #fff); }
+.ptab-cite.c気になる { color: #8A6D1D; border-color: #C9A227; }
+.ptab-cite.c引用候補 { color: #7A4E9E; border-color: #9C6FC4; }
+.ptab-cite.c引用する { color: var(--r-done, #2E6B4F); border-color: var(--r-done, #2E6B4F); font-weight: 700; }
+.ptab-cite.c引用しない { color: var(--ink-soft, #5B6B85); border-style: dashed; }
+.pv-empty { color: var(--ink-soft, #5B6B85); text-align: center; padding: 50px 0; font-size: 13px; }
+
+/* ---------- ワークスペース ---------- */
+.pv { display: grid; grid-template-columns: minmax(0, 1fr) 360px; min-height: 100%; }
+.pv-main { min-width: 0; padding: 16px 20px 40px; }
+.pv-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.pv-title { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.pv-name { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: .04em; }
+.pv-name button { border: 0; background: none; padding: 2px 4px; margin-left: -4px; border-radius: 4px; font: inherit; color: inherit; cursor: text; }
+.pv-name button:hover { background: var(--line-soft, #E8E5DC); }
+.pv-name-input { font-size: 18px; font-weight: 700; padding: 2px 6px; border: 1px solid var(--focus, #2F6FD0); border-radius: 4px; min-width: 240px; }
+.pv-count { color: var(--ink-soft, #5B6B85); font-size: 12px; }
+.pv-badge { font-size: 11px; color: var(--ink-soft, #5B6B85); border: 1px dashed var(--line, #DAD6CA); border-radius: 3px; padding: 0 6px; }
+.pv-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pv-seg { display: inline-flex; border: 1px solid var(--line, #DAD6CA); border-radius: 4px; overflow: hidden; }
+.pv-seg button { border: 0; background: var(--card, #fff); color: var(--ink-soft, #5B6B85); padding: 5px 12px; font-size: 12.5px; cursor: pointer; }
+.pv-seg button + button { border-left: 1px solid var(--line, #DAD6CA); }
+.pv-seg button.on { background: var(--ink, #1F2C46); color: #fff; }
+.pv-missing { padding: 60px 20px; text-align: center; color: var(--ink-soft, #5B6B85); }
+@media (max-width: 1400px) {
+  .pv { grid-template-columns: minmax(0, 1fr) 320px; }
+}
+@media (max-width: 1100px) {
+  .pv { grid-template-columns: 1fr; }
+  .pp { border-left: 0; border-top: 1px solid var(--line, #DAD6CA); }
+}
