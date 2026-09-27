@@ -96,7 +96,7 @@ export function Sidebar({ route }: { route: Route }) {
       ))}
 
       <h3>保存フィルタ</h3>
-      {!filters.length && <div className="side-note">フィルタバーの「フィルタを保存」で追加できます</div>}
+      {!filters.length && <div className="side-note">絞り込んだあとに「フィルタを保存」を押すと、ここに追加されます</div>}
       {filters.map((f, i) => (
         <SideItem key={f.id} label={f.name} count={count(f.query)} on={isOn({ kind: 'saved', id: f.id })}
           onClick={() => go({ kind: 'saved', id: f.id })} onRename={(n) => a.renameFilter(f.id, n)}

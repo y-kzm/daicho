@@ -81,7 +81,6 @@ export function BulkBar() {
           )}
         </Popover>
       </span>
-      <button type="button" className="hbtn" disabled={busy} title="選択した論文のタグを AI に提案させる" onClick={aiTags}>AI タグ</button>
       {scope !== null && (
         <span aria-disabled={busy} style={busy ? { pointerEvents: 'none', opacity: 0.6 } : undefined}>
           <Popover label="引用状態" className="hbtn">
@@ -116,25 +115,31 @@ export function BulkBar() {
           )}
         </Popover>
       </span>
+      <button type="button" className="hbtn" disabled={busy} title={allStarred ? '★ を外す' : '★ を付ける'}
+        onClick={() => void run({ type: 'flags', starred: !allStarred }, allStarred ? '★ を外しました' : '★ を付けました')}>★</button>
+      <button type="button" className="hbtn" disabled={busy} onClick={bibtex}>BibTeX</button>
       <span aria-disabled={busy} style={busy ? { pointerEvents: 'none', opacity: 0.6 } : undefined}>
-        <Popover label="優先度" className="hbtn">
+        <Popover label="その他" className="hbtn" align="right">
           {(close) => (
             <div className="menu">
+              <button type="button" className="menu-item" title="選択した論文のタグを AI に提案させる"
+                onClick={() => { close(); aiTags(); }}>AI にタグを提案させる</button>
+              <div className="menu-note">優先度</div>
               {PRIORITY_MENU.map((p) => (
                 <button key={p} type="button" className="menu-item"
                   onClick={() => { close(); void run({ type: 'flags', priority: p }, '優先度を変更しました'); }}>
                   {p === 0 ? 'なし' : PRIORITY_LABELS[p]}
                 </button>
               ))}
+              <div className="menu-sep" />
+              {scope !== null && (
+                <button type="button" className="menu-item" onClick={() => { close(); unproject(); }}>プロジェクトから外す</button>
+              )}
+              <button type="button" className="menu-item danger" onClick={() => { close(); remove(); }}>削除</button>
             </div>
           )}
         </Popover>
       </span>
-      <button type="button" className="hbtn" disabled={busy} title={allStarred ? '★ を外す' : '★ を付ける'}
-        onClick={() => void run({ type: 'flags', starred: !allStarred }, allStarred ? '★ を外しました' : '★ を付けました')}>★</button>
-      <button type="button" className="hbtn" disabled={busy} onClick={bibtex}>BibTeX</button>
-      {scope !== null && <button type="button" className="hbtn" disabled={busy} onClick={unproject}>プロジェクトから外す</button>}
-      <button type="button" className="hbtn danger" disabled={busy} onClick={remove}>削除</button>
       <span className="spacer" />
       <button type="button" className="linkbtn" onClick={clear}>選択解除</button>
     </div>

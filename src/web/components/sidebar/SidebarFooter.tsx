@@ -20,32 +20,28 @@ const SERVICES: [string, string, string][] = [
 export function SidebarFooter({ route, showStats = true }: { route: Route; showStats?: boolean }) {
   const { data } = useAppData();
   return (
-    <>
-      <h3>その他</h3>
+    <div className="side-foot">
       {showStats && <SideItem label="統計" on={route.name === 'stats'} onClick={() => navigate({ name: 'stats' })} />}
 
       <details className="side-acc">
-        <summary>リンク</summary>
+        <summary>エクスポートとリンク</summary>
         <div className="side-links">
+          <a href={api.exportUrl('csv')}>CSV でエクスポート</a>
+          <a href={api.exportUrl('json')}>JSON でエクスポート</a>
           <a href={data.links.jcr} target="_blank" rel="noopener">Journal Citation Reports ↗</a>
           <a href={data.links.core} target="_blank" rel="noopener">CORE Conference Ranks ↗</a>
-          <a href={api.exportUrl('csv')}>CSV でエクスポート ↓</a>
-          <a href={api.exportUrl('json')}>JSON でエクスポート ↓</a>
         </div>
-      </details>
-
-      <details className="side-acc">
-        <summary>利用サービス</summary>
+        <div className="side-sub">利用しているサービス</div>
         <div className="side-links">
           {SERVICES.map(([href, name, note]) => (
-            <div key={href}>
-              <a href={href} target="_blank" rel="noopener">{name} ↗</a>
-              <div className="side-note svc">{note}</div>
-            </div>
+            <a key={href} href={href} target="_blank" rel="noopener">
+              {name} ↗
+              <span className="side-link-note">{note}</span>
+            </a>
           ))}
         </div>
-        <div className="side-note">このほか、DOI 未登録の論文は、論文ページの citation メタタグ、abstract 欄から直接取得します。</div>
+        <div className="side-note">DOI 未登録の論文は、論文ページの citation メタタグと abstract 欄から直接取得します。</div>
       </details>
-    </>
+    </div>
   );
 }

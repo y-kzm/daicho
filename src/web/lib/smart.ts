@@ -190,3 +190,76 @@ export function sameSource(a: LibrarySource, b: LibrarySource): boolean {
   if (a.kind === 'tag' && b.kind === 'tag') return a.name === b.name;
   return false;
 }
+
+/** 使用中の絞り込み 1 件。clear は、その条件だけを外した条件を返す */
+export interface FilterChip {
+  key: string;
+  label: string;
+  clear: (q: FilterQuery) => FilterQuery;
+}
+
+function without<T>(list: T[] | undefined, v: T): T[] | undefined {
+  const next = (list ?? []).filter((x) => x !== v);
+  return next.length ? next : undefined;
+}
+
+/**
+ * タグが 1 つ以下なら「すべて含む」と「いずれかを含む」は同じ結果になる。
+ * 表示に出ない条件を残さないよう、その場合は表示元 (base) の値に戻す。
+ */
+export function normalizeTagMode(q: FilterQuery, base: FilterQuery): FilterQuery {
+  if ((q.tags?.length ?? 0) > 1 || q.tagMode === base.tagMode) return q;
+  return { ...q, tagMode: base.tagMode };
+}
+
+/**
+ * 表示元 (base) の条件に上乗せした絞り込みを、外せる単位に分けて返す。
+ * 読了・タグ・引用状態・優先度は値ごと、検索語・プロジェクト・年・★ は条件ごと。
+ * base に含まれる値 (タグを表示元にしているときのそのタグなど) は出さない。
+ */
+export function activeFilters(
+  q: FilterQuery, base: FilterQuery, projectName: (id: number) => string | undefined,
+): FilterChip[] {
+  const out: FilterChip[] = [];
+  const search = q.search?.trim();
+  if (search && search !== (base.search?.trim() ?? '')) {
+    out.push({ key: 'search', label: `「${search}」`, clear: (c) => ({ ...c, search: base.search }) });
+  }
+  for (const r of q.read ?? []) {
+    if (base.read?.includes(r)) continue;
+    out.push({ key: 'read:' + r, label: r, clear: (c) => ({ ...c, read: without(c.read, r) }) });
+  }
+  for (const t of q.tags ?? []) {
+    if (base.tags?.includes(t)) continue;
+    out.push({ key: 'tag:' + t, label: '# ' + t, clear: (c) => normalizeTagMode({ ...c, tags: without(c.tags, t) }, base) });
+  }
+  const beyondTags = (q.tags ?? []).filter((t) => !base.tags?.includes(t)).length;
+  if (q.tagMode === 'all' && base.tagMode !== 'all' && (q.tags?.length ?? 0) > 1 && beyondTags > 0) {
+    out.push({ key: 'tagMode', label: 'タグをすべて含む', clear: (c) => ({ ...c, tagMode: base.tagMode }) });
+  }
+  if (q.projectId !== undefined && q.projectId !== base.projectId) {
+    const name = projectName(q.projectId) ?? '(削除済み)';
+    out.push({ key: 'project', label: 'プロジェクト: ' + name, clear: (c) => ({ ...c, projectId: base.projectId }) });
+  }
+  for (const s of q.cite ?? []) {
+    if (base.cite?.includes(s)) continue;
+    out.push({ key: 'cite:' + s, label: s, clear: (c) => ({ ...c, cite: without(c.cite, s) }) });
+  }
+  if ((q.yearFrom !== undefined || q.yearTo !== undefined) && (q.yearFrom !== base.yearFrom || q.yearTo !== base.yearTo)) {
+    out.push({
+      key: 'year', label: `${q.yearFrom ?? ''}〜${q.yearTo ?? ''} 年`,
+      clear: (c) => ({ ...c, yearFrom: base.yearFrom, yearTo: base.yearTo }),
+    });
+  }
+  if (q.starred !== undefined && q.starred !== base.starred) {
+    out.push({ key: 'starred', label: q.starred ? '★ あり' : '★ なし', clear: (c) => ({ ...c, starred: base.starred }) });
+  }
+  for (const p of q.priority ?? []) {
+    if (base.priority?.includes(p)) continue;
+    out.push({
+      key: 'priority:' + p, label: '優先度 ' + (p === 0 ? 'なし' : PRIORITY_LABELS[p]),
+      clear: (c) => ({ ...c, priority: without(c.priority, p) }),
+    });
+  }
+  return out;
+}

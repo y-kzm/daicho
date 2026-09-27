@@ -1,0 +1,145 @@
+/* ダイアログと入力フォーム、統計 */
+dialog {
+  border: none; border-radius: 12px; padding: 0; color: var(--ink); background: var(--card);
+  width: min(740px, 94vw); box-shadow: 0 24px 60px rgba(22, 29, 46, .24), 0 0 0 1px var(--line);
+}
+dialog::backdrop { background: rgba(22, 29, 46, .32); }
+dialog .inner { padding: 24px 26px; max-height: 86vh; overflow-y: auto; }
+dialog h2 { margin: 0 0 18px; font-size: 17px; font-weight: 700; }
+#confirmDialog { width: min(440px, 94vw); }
+#mergeDialog { width: min(820px, 94vw); }
+.confirm-body { font-size: 14px; line-height: 1.7; white-space: pre-wrap; margin: 0; color: var(--ink-2); }
+
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+.dialog-actions button { padding: 8px 18px; border-radius: var(--radius); font-size: 13.5px; cursor: pointer; }
+.dialog-actions .cancel { border: 1px solid var(--line); background: var(--card); color: var(--ink-2); }
+.dialog-actions .cancel:hover { background: var(--line-soft); color: var(--ink); }
+.dialog-actions .submit { border: 1px solid var(--ink); background: var(--ink); color: #fff; font-weight: 600; }
+.dialog-actions .submit:hover { background: #2A3450; }
+.dialog-actions .submit:disabled { opacity: .5; cursor: default; }
+.dialog-actions .submit.danger { background: var(--danger); border-color: var(--danger); }
+
+/* ---------- 入力フォーム ---------- */
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+.grid .full { grid-column: 1 / -1; }
+label.field, div.field, .pp-field { display: block; font-size: 12.5px; color: var(--ink-2); }
+label.field .flabel, div.field .flabel {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 4px 10px; min-height: 24px; margin-bottom: 2px;
+}
+label.field input, label.field textarea, label.field select,
+div.field input, div.field textarea, div.field select {
+  display: block; width: 100%; margin-top: 4px; padding: 8px 11px;
+  border: 1px solid var(--line); border-radius: var(--radius); font-size: 14px;
+  background: var(--card); color: var(--ink);
+}
+label.field input::placeholder, div.field input::placeholder, textarea::placeholder { color: var(--ink-3); }
+/* input と select の高さを完全に揃える (select はネイティブ描画をやめる) */
+label.field input, div.field input, label.field select, div.field select { height: 38px; }
+label.field select, div.field select {
+  -webkit-appearance: none; appearance: none; padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238D95A5' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 11px center;
+}
+label.field textarea, div.field textarea { resize: vertical; min-height: 56px; line-height: 1.6; }
+div.field textarea[name="summary"] { min-height: 128px; }
+
+.inline-btn-row, .venue-group .vg-fields .with-btn { display: flex; gap: 8px; align-items: flex-end; }
+.inline-btn-row label, .venue-group .vg-fields .with-btn label { flex: 1; }
+.inline-btn-row button, .venue-group .vg-fields .with-btn button {
+  height: 38px; padding: 0 14px; border: 1px solid var(--line); color: var(--ink);
+  background: var(--card); border-radius: var(--radius); font-size: 13px; cursor: pointer; white-space: nowrap;
+}
+.inline-btn-row button:hover, .venue-group .vg-fields .with-btn button:hover { background: var(--line-soft); }
+.inline-btn-row button:disabled, .venue-group .vg-fields .with-btn button:disabled { opacity: .5; cursor: default; }
+
+.sumtools { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+/* div.field select の指定 (幅いっぱい・高さ 38px) より優先させる */
+div.field .sumtools select {
+  display: inline-block; width: auto; height: 26px; margin: 0; font-size: 12px; padding: 0 24px 0 8px;
+  background-position: right 8px center;
+}
+.sumtools .genbtn {
+  height: 26px; border: 1px solid var(--line); color: var(--ink); background: var(--card);
+  border-radius: var(--radius); font-size: 12px; padding: 0 12px; cursor: pointer; white-space: nowrap;
+}
+.sumtools .genbtn:hover { background: var(--line-soft); }
+.sumtools .genbtn:disabled { opacity: .5; cursor: default; }
+
+/* ジャーナル / カンファレンスのまとまり */
+.venue-group { grid-column: 1 / -1; padding: 14px 0 0; border-top: 1px solid var(--line-soft); }
+.venue-group .vg-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 8px;
+}
+.venue-group .vg-head a { font-size: 12px; font-weight: 400; }
+.venue-group .vg-fields { display: grid; grid-template-columns: 2fr 1fr; gap: 14px 16px; align-items: end; }
+#coreResults { font-size: 13px; margin-top: 10px; }
+#coreResults:empty { display: none; }
+#coreResults .cand {
+  display: flex; gap: 10px; align-items: center; padding: 6px 10px;
+  border: 1px solid var(--line); border-radius: var(--radius); margin-top: 4px; cursor: pointer; background: var(--card);
+}
+#coreResults .cand:hover { border-color: var(--accent); background: var(--accent-soft); }
+#coreResults .cand .rk { font-weight: 700; min-width: 28px; }
+#coreResults .cand-na, #coreResults .cand-na .rk { color: var(--ink-3); }
+
+.tagpick { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.tagpick .tp {
+  font-size: 12.5px; padding: 3px 11px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink-2); user-select: none;
+}
+.tagpick .tp:hover { border-color: var(--ink-3); color: var(--ink); }
+.tagpick .tp.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; font-weight: 600; }
+.tagpick-empty { font-size: 12.5px; color: var(--ink-3); margin-top: 4px; }
+
+/* 追加ダイアログのプロジェクト選択 */
+.pp-field-label { display: block; margin-bottom: 4px; }
+.pp-pick {
+  list-style: none; margin: 0; padding: 6px 10px; max-height: 148px; overflow-y: auto;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
+}
+.pp-pick li { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 30px; }
+.pp-pick label {
+  display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink); cursor: pointer;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pp-pick input[type="checkbox"] { width: auto; margin: 0; flex-shrink: 0; }
+.pp-pick select { width: auto; flex-shrink: 0; }
+
+/* ---------- BibTeX ---------- */
+#bibOut {
+  width: 100%; min-height: 250px; font-family: var(--code); font-size: 12.5px; line-height: 1.6; margin-top: 12px;
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 12px;
+  background: var(--bg); white-space: pre; overflow: auto;
+}
+.bibopts { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 13.5px; }
+
+/* ---------- 重複マージ ---------- */
+.merge-group { border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 10px; background: var(--card); }
+.mg-head .mono { font-family: var(--code); font-size: 12px; }
+.mg-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); margin-bottom: 6px; }
+.mg-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mg-table th { text-align: left; font-size: 12px; color: var(--ink-3); font-weight: 600; padding: 4px 6px; border-bottom: 1px solid var(--line-soft); }
+.mg-table td { padding: 6px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+
+/* ---------- 統計 ---------- */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.stat-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 18px 20px; }
+.stat-card h3 { margin: 0 0 14px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.stat-card .empty { padding: 20px 0; font-size: 13px; }
+.bar-row { display: grid; grid-template-columns: 116px 1fr 40px; gap: 10px; align-items: center; font-size: 12.5px; margin-bottom: 7px; }
+.bar-row .label { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { background: var(--line-soft); border-radius: 3px; height: 8px; position: relative; }
+.bar-fill { position: absolute; inset: 0 auto 0 0; background: var(--ink); border-radius: 3px; min-width: 2px; }
+.bar-fill.green { background: var(--r-done); }
+.bar-fill.amber { background: var(--r-skim); }
+.bar-fill.grey { background: var(--r-unread); }
+.bar-row .num { text-align: right; color: var(--ink-2); }
+.bignum { font-size: 34px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.bignum small { font-size: 13px; color: var(--ink-3); font-weight: 400; margin-left: 6px; }
+
+@media (max-width: 760px) {
+  .grid, .venue-group .vg-fields { grid-template-columns: 1fr; }
+  dialog .inner { padding: 20px 18px; }
+}

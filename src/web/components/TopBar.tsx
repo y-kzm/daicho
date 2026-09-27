@@ -8,6 +8,9 @@ interface Props {
   onAdd: () => void;
 }
 
+/** Mac は ⌘K、それ以外は Ctrl K (どちらのキーでも開く) */
+const SHORTCUT = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';
+
 export function TopBar({ title, scopeName, count, addLabel, onOpenPalette, onAdd }: Props) {
   return (
     <header className="topbar">
@@ -20,8 +23,10 @@ export function TopBar({ title, scopeName, count, addLabel, onOpenPalette, onAdd
       <h1>{title}</h1>
       {count !== null && <span className="count">{count} 件</span>}
       <span className="spacer" />
-      <input className="topbar-search" type="search" readOnly aria-label="検索" placeholder="検索・コマンド (⌘K / Ctrl+K)"
-        onFocus={(ev) => { ev.currentTarget.blur(); onOpenPalette(); }} />
+      <button type="button" className="topbar-search" aria-label="検索とコマンドを開く" onClick={onOpenPalette}>
+        <span>検索とコマンド</span>
+        <kbd>{SHORTCUT}</kbd>
+      </button>
       <button type="button" className="hbtn primary" onClick={onAdd}>{addLabel}</button>
     </header>
   );

@@ -15,7 +15,7 @@ import { BulkBar } from '../BulkBar';
 import { CardGrid } from '../CardGrid';
 import { DetailPanel } from '../DetailPanel';
 import { EntryTable, type TableSort } from '../EntryTable';
-import { FilterBar } from '../FilterBar';
+import { FilterBar, FilterChips } from '../FilterBar';
 import { AddEntryPicker } from '../project/AddEntryPicker';
 import '../project/project.css';
 import { scopeColumns } from './scopeColumns';
@@ -81,19 +81,19 @@ function LibraryInner() {
   return (
     <div className="library">
       <div className="lib-main">
-        {projectId !== undefined && (
-          <div className="scope-bar">
-            <span className="scope-bar-text">
-              「{project?.name}」の論文だけを表示しています。登録済みの論文は「ライブラリから追加」で入れられます。
-            </span>
-            <AddEntryPicker projectId={projectId} label="ライブラリから追加" onPicked={(ids) => { if (ids[0] !== undefined) openDetail(ids[0]); }} />
+        <div className="lib-tools">
+          <FilterBar />
+          <div className="lib-tools-right">
+            <ViewControls view={view} onView={setView} groupBy={groupBy} groupKeys={groupKeysFor(projectId)}
+              onGroupBy={(g) => setQuery((q) => ({ ...q, groupBy: g }))}
+              sort={sort} onSort={(s) => setQuery((q) => ({ ...q, sort: s.key, sortDir: s.dir }))}
+              columns={allColumns} hiddenColumns={projectId === undefined ? [] : HIDDEN_IN_PROJECT} onColumns={setColumns} />
+            {projectId !== undefined && (
+              <AddEntryPicker projectId={projectId} label="ライブラリから追加" onPicked={(ids) => { if (ids[0] !== undefined) openDetail(ids[0]); }} />
+            )}
           </div>
-        )}
-        <FilterBar />
-        <ViewControls view={view} onView={setView} groupBy={groupBy} groupKeys={groupKeysFor(projectId)}
-          onGroupBy={(g) => setQuery((q) => ({ ...q, groupBy: g }))}
-          sort={sort} onSort={(s) => setQuery((q) => ({ ...q, sort: s.key, sortDir: s.dir }))}
-          columns={allColumns} hiddenColumns={projectId === undefined ? [] : HIDDEN_IN_PROJECT} onColumns={setColumns} />
+        </div>
+        <FilterChips />
         <BulkBar />
         {pool.length === 0 && projectId !== undefined ? (
           <div className="empty">
@@ -101,7 +101,7 @@ function LibraryInner() {
             <div className="empty-actions">
               <button type="button" className="hbtn primary" onClick={addNew}>新しい論文を登録</button>
             </div>
-            <div className="side-note">登録済みの論文は、上の「ライブラリから追加」で入れられます。</div>
+            <div className="empty-note">登録済みの論文は、上の「ライブラリから追加」で「{project?.name}」に入れられます。</div>
           </div>
         ) : entries.length === 0 ? (
           <div className="empty">

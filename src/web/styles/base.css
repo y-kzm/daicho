@@ -1,0 +1,205 @@
+/* 色・文字・ボタン・入力欄などの土台 */
+:root {
+  --bg: #FBFBF9;
+  --side: #F4F3EF;
+  --card: #FFFFFF;
+  --ink: #161D2E;
+  --ink-2: #5A6478;
+  --ink-3: #6B7383;         /* 補助の文字。背景との明度差 4.5:1 以上 */
+  --faint: #8D95A5;         /* 文字ではない記号 (★ の枠など)。3:1 以上 */
+  --line: #E6E4DD;
+  --line-soft: #EFEEE9;
+  --accent: #2B4C8C;        /* 藍 */
+  --accent-soft: #E8EDF7;
+  --danger: #C2412D;
+  --star: #C9971C;
+  --r-unread: #9A9FA9;      /* 未読 */
+  --r-skim: #B7791F;        /* 斜め読み */
+  --r-done: #2F7D5B;        /* 精読済 */
+  --c-watch: #8A6D1D;       /* 気になる */
+  --c-maybe: #6F4B9B;       /* 引用候補 */
+  --rank-a: #2F7D5B;
+  --rank-b: #B7791F;
+  --rank-c: #7C8494;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --shadow: 0 10px 30px rgba(22, 29, 46, .12), 0 1px 2px rgba(22, 29, 46, .06);
+  --ui: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", "Segoe UI", sans-serif;
+  --code: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* 以前の名前 (コンポーネント内の指定から参照されている) */
+  --paper: var(--bg);
+  --ink-soft: var(--ink-2);
+  --focus: var(--accent);
+  --tag-bg: var(--accent-soft);
+  --tag-on: var(--ink);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--ui); font-size: 14px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+button, input, select, textarea { font-family: inherit; color: inherit; }
+a { color: var(--accent); text-underline-offset: 2px; }
+/* 数字は桁をそろえる。等幅フォントは BibTeX や DOI など、文字列そのものを読む場所だけ */
+.mono { font-variant-numeric: tabular-nums; }
+.spacer { flex: 1; }
+kbd {
+  font-family: var(--ui); font-size: 11px; color: var(--ink-3);
+  border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; background: var(--bg);
+}
+
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offset: -1px; }
+
+/* ---------- ボタン ---------- */
+.hbtn, .pv-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  padding: 6px 12px; border-radius: var(--radius); font-size: 13px; line-height: 1.4;
+  cursor: pointer; white-space: nowrap; transition: background-color .12s, border-color .12s;
+}
+.hbtn:hover, .pv-btn:hover { background: var(--line-soft); }
+.hbtn.on, .hbtn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.hbtn.primary, .pv-btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); font-weight: 600; }
+.hbtn.primary:hover, .pv-btn.primary:hover { background: #2A3450; border-color: #2A3450; }
+.hbtn.danger:hover { color: var(--danger); border-color: var(--danger); background: var(--card); }
+.hbtn:disabled, .pv-btn:disabled { opacity: .5; cursor: default; }
+.hbtn.icon { padding: 6px 10px; }
+.badge {
+  min-width: 18px; padding: 0 5px; border-radius: 9px; font-size: 11px; line-height: 18px; text-align: center;
+  background: var(--accent); color: #fff; font-variant-numeric: tabular-nums;
+}
+.sbtn {
+  border: 1px solid var(--line); background: var(--card); color: var(--ink-2);
+  font-size: 12px; padding: 3px 10px; border-radius: var(--radius); cursor: pointer;
+}
+.sbtn:hover { color: var(--ink); background: var(--line-soft); }
+.sbtn.danger:hover { color: var(--danger); border-color: var(--danger); background: var(--card); }
+.sbtn:disabled { opacity: .5; cursor: default; }
+.linkbtn {
+  border: none; background: none; color: var(--accent); cursor: pointer;
+  font-size: 12.5px; padding: 0; text-decoration: none;
+}
+.linkbtn:hover { text-decoration: underline; }
+.linkbtn.danger { color: var(--danger); }
+.linkbtn:disabled { color: var(--ink-3); cursor: default; text-decoration: none; }
+
+/* ---------- 切り替え・チップ ---------- */
+.seg { display: inline-flex; padding: 2px; border-radius: var(--radius); background: var(--line-soft); }
+.seg button {
+  border: none; background: transparent; color: var(--ink-2); padding: 4px 11px; font-size: 12.5px;
+  border-radius: 4px; cursor: pointer; white-space: nowrap;
+}
+.seg button.on { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(22, 29, 46, .12); }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink-2);
+  padding: 3px 10px; border-radius: 999px; font-size: 12.5px; line-height: 1.5; cursor: pointer; white-space: nowrap;
+}
+button.chip:hover { border-color: var(--ink-3); color: var(--ink); }
+.chip.on { border-color: transparent; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.chip.removable { cursor: default; padding-right: 4px; }
+.chip.removable button {
+  border: none; background: none; color: inherit; cursor: pointer; font-size: 14px; line-height: 1;
+  width: 18px; height: 18px; border-radius: 50%; padding: 0; opacity: .7;
+}
+.chip.removable button:hover { opacity: 1; background: rgba(43, 76, 140, .14); }
+
+/* ---------- ラベル類 ---------- */
+.pill {
+  font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 4px; white-space: nowrap;
+  background: var(--line-soft); color: var(--ink-2);
+}
+.pill.if { background: var(--accent-soft); color: var(--accent); }
+.pill.na { background: transparent; color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--line); }
+.pill.rank-a { background: #E4F1EA; color: var(--rank-a); }
+.pill.rank-b { background: #F6ECD9; color: var(--rank-b); }
+.pill.rank-c { background: var(--line-soft); color: var(--rank-c); }
+.tagchip {
+  font-size: 12px; background: var(--line-soft); color: var(--ink-2);
+  padding: 1px 8px; border-radius: 4px; cursor: pointer; border: none;
+}
+.tagchip:hover { background: var(--accent-soft); color: var(--accent); }
+.tagchip.small { font-size: 11.5px; padding: 0 7px; cursor: default; }
+.tagchip.small:hover { background: var(--line-soft); color: var(--ink-2); }
+.star { color: var(--faint); font-size: 14px; line-height: 1; }
+.star.on { color: var(--star); }
+.read-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; white-space: nowrap; color: var(--ink-2); }
+.read-label::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--r-unread); flex-shrink: 0; }
+.read-label.r未読 { color: var(--ink-2); }
+.read-label.r斜め読み::before { background: var(--r-skim); }
+.read-label.r精読済::before { background: var(--r-done); }
+.read-label.r精読済 { color: var(--ink); }
+.prio { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 4px; white-space: nowrap; background: var(--line-soft); color: var(--ink-2); }
+.prio.p2 { background: #F6ECD9; color: var(--r-skim); }
+.prio.p3 { background: #F9E4DF; color: var(--danger); }
+.cite-label { font-size: 12.5px; white-space: nowrap; color: var(--ink-2); }
+.cite-label.c引用する { color: var(--r-done); font-weight: 600; }
+.cite-label.c引用候補 { color: var(--c-maybe); }
+.cite-label.c気になる { color: var(--c-watch); }
+
+/* ---------- その場で選ぶ小さな select ---------- */
+select.read, select.cite, .dp-controls select, .dp-add select, .bulk-row select, .pp-pick select, .fp select {
+  font-size: 12.5px; border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--card); padding: 3px 6px; color: var(--ink); cursor: pointer; max-width: 100%;
+}
+select.cite { max-width: 120px; }
+select.read.r1 { color: var(--r-skim); }
+select.read.r2 { color: var(--r-done); font-weight: 600; }
+select.cite.c気になる { color: var(--c-watch); }
+select.cite.c引用候補 { color: var(--c-maybe); }
+select.cite.c引用する { color: var(--r-done); font-weight: 600; }
+select.cite.c引用しない { color: var(--ink-3); }
+
+/* ---------- ポップオーバー・メニュー ---------- */
+.popover { position: relative; display: inline-block; }
+.popover-panel {
+  position: absolute; top: calc(100% + 6px); z-index: 30; min-width: 176px;
+  background: var(--card); color: var(--ink); text-align: left;
+  border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow);
+}
+.popover-panel.left { left: 0; }
+.popover-panel.right { right: 0; }
+.menu { display: flex; flex-direction: column; padding: 5px; max-height: 60vh; overflow-y: auto; }
+.menu-item {
+  text-align: left; border: none; background: none; padding: 6px 10px; font-size: 13px;
+  color: var(--ink); border-radius: 5px; cursor: pointer; white-space: nowrap;
+}
+.menu-item:hover:not(:disabled) { background: var(--line-soft); }
+.menu-item:disabled { color: var(--ink-3); opacity: .55; cursor: default; }
+.menu-item.danger { color: var(--danger); }
+.menu-check { display: flex; gap: 8px; align-items: center; padding: 5px 10px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.menu-note { font-size: 11.5px; color: var(--ink-3); padding: 6px 10px 2px; }
+.menu-sep { height: 1px; background: var(--line-soft); margin: 5px 0; }
+.menu-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
+
+/* ---------- 通知・読み込み ---------- */
+.empty { color: var(--ink-2); text-align: center; padding: 64px 0; font-size: 14px; }
+.empty .hbtn { margin-top: 14px; }
+.empty-actions { margin: 14px 0 6px; }
+.empty-note { font-size: 12.5px; color: var(--ink-3); }
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: #fff; padding: 10px 18px; border-radius: var(--radius-lg);
+  font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none;
+  max-width: 90vw; z-index: 50; box-shadow: var(--shadow);
+}
+#toast.show { opacity: 1; }
+#toast.error { background: var(--danger); }
+#loading { text-align: center; padding: 80px 0; color: var(--ink-2); font-size: 13px; }
+#loading .hbtn { margin-top: 12px; }
+.spin {
+  display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line);
+  border-top-color: var(--ink); border-radius: 50%; vertical-align: -2px;
+  animation: spin .8s linear infinite; margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
+  * { transition: none !important; }
+}
