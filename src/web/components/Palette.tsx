@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { paletteItemKey, searchPalette, type PaletteItem } from '../lib/palette';
-import { navigate } from '../lib/router';
+import { navigate, withScope } from '../lib/router';
 import { useAppData } from '../state/AppDataContext';
 import { useLibrary } from '../state/LibraryContext';
+import { useScope } from '../state/ScopeContext';
 import { Modal } from './Modal';
 
 export const PALETTE_COMMANDS: PaletteItem[] = [
@@ -43,10 +44,11 @@ export function Palette(props: Props) {
 function PaletteBody({ onClose, onCommand, onPickEntry }: Props) {
   const { data } = useAppData();
   const { selectSource } = useLibrary();
+  const { scope } = useScope();
   const [q, setQ] = useState('');
   const [cursor, setCursor] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
-  const items = useMemo(() => searchPalette(q, data, PALETTE_COMMANDS), [q, data]);
+  const items = useMemo(() => searchPalette(q, data, PALETTE_COMMANDS, 30, scope), [q, data, scope]);
 
   useEffect(() => setCursor(0), [q]);
   useEffect(() => {
@@ -57,8 +59,8 @@ function PaletteBody({ onClose, onCommand, onPickEntry }: Props) {
     onClose();
     switch (it.kind) {
       case 'entry': onPickEntry(it.id); break;
-      case 'project': navigate({ name: 'project', id: it.id }); break;
-      case 'tag': selectSource({ kind: 'tag', name: it.name }); navigate({ name: 'library' }); break;
+      case 'project': navigate({ name: 'library', scope: it.id }); break;
+      case 'tag': selectSource({ kind: 'tag', name: it.name }); navigate(withScope({ name: 'library' }, scope)); break;
       default: onCommand(it.id);
     }
   };
@@ -86,6 +88,7 @@ function PaletteBody({ onClose, onCommand, onPickEntry }: Props) {
             <span className="pal-kind">{KIND_LABEL[it.kind]}</span>
             <span className="pal-main">{mainText(it)}</span>
             {it.kind === 'entry' && it.sub && <span className="pal-sub">{it.sub}</span>}
+            {it.kind === 'entry' && it.outside && <span className="pal-out" title="開いているプロジェクトには入っていません">プロジェクト外</span>}
           </li>
         ))}
       </ul>

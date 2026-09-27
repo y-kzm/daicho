@@ -1,5 +1,5 @@
 import type {
-  AppData, BulkOp, CiteState, CoreResult, DoiMetadata, DuplicateGroup, EntryInput, FilterQuery, LlmInput, LlmProvider,
+  AppData, BulkOp, CiteState, CoreResult, DoiMetadata, DuplicateGroup, EntryInput, EntryProjectInput, FilterQuery, LlmInput, LlmProvider,
   Priority, ReadState, SummaryPromptResult, SummaryResult, TagProposal,
 } from '../shared/types';
 
@@ -70,7 +70,9 @@ export const api = {
   data: () => call<AppData>('GET', '/data'),
 
   // エントリ
-  addEntry: (input: EntryInput) => call<{ id: number }>('POST', '/entries', input),
+  /** projects を渡すと、追加と同時にそのプロジェクトへ入れる */
+  addEntry: (input: EntryInput, projects: EntryProjectInput[] = []) =>
+    call<{ id: number }>('POST', '/entries', projects.length ? { ...input, projects } : input),
   updateEntry: (id: number, input: EntryInput) => send('PUT', `/entries/${id}`, input),
   deleteEntry: (id: number) => send('DELETE', `/entries/${id}`),
   setRead: (id: number, state: ReadState) => send('PATCH', `/entries/${id}/read`, { state }),

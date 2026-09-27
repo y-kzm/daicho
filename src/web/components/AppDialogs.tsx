@@ -1,10 +1,10 @@
-import { useRef } from 'react';
-import { api } from '../api';
+import { useMemo, useRef } from 'react';
+import type { EntryProjectInput } from '../../shared/types';
 import { useRoute } from '../lib/router';
 import { useAppData } from '../state/AppDataContext';
 import { useDialogs } from '../state/DialogContext';
 import { useLibrary } from '../state/LibraryContext';
-import { useToast } from '../state/useToast';
+import { useScope } from '../state/ScopeContext';
 import { ConfirmDialog } from './ConfirmDialog';
 import { BibtexDialog } from './dialogs/BibtexDialog';
 import { BulkTagDialog } from './dialogs/BulkTagDialog';
@@ -14,9 +14,9 @@ import { PromptDialog } from './dialogs/PromptDialog';
 import { SaveFilterDialog } from './dialogs/SaveFilterDialog';
 
 export function AppDialogs() {
-  const { data, reload } = useAppData();
+  const { data } = useAppData();
+  const { scope } = useScope();
   const route = useRoute();
-  const toast = useToast();
   const { dialog, close, promptText, showPrompt, closePrompt } = useDialogs();
   // await の後で「今のダイアログ」を見るため (レンダー時の dialog はクロージャに固定される)
   const dialogRef = useRef(dialog);
@@ -25,23 +25,20 @@ export function AppDialogs() {
   const entry = dialog.kind === 'entry' && dialog.id !== null ? data.entries.find((e) => e.id === dialog.id) ?? null : null;
   // プロジェクト画面ではライブラリの絞り込みタグを引き継がない
   const newTags = dialog.kind === 'entry' && dialog.id === null && route.name !== 'project' ? query.tags ?? [] : [];
-  const onEntrySaved = async (id: number, isNew: boolean) => {
+  // 開いているプロジェクトは、追加ダイアログで最初から選択済みにする (登録と同じ要求で入る)
+  const newProjects = useMemo<EntryProjectInput[]>(
+    () => (scope === null ? [] : [{ projectId: scope, state: '気になる' }]),
+    [scope],
+  );
+  const onEntrySaved = (id: number, isNew: boolean) => {
     close();
-    if (!isNew) return;
-    if (route.name !== 'project') { setDetailId(id); return; }
-    // プロジェクト画面で追加したエントリは、そのプロジェクトの「気になる」列に入れる
-    try {
-      await api.setCite(id, route.id, '気になる');
-    } catch (err) {
-      toast((err as Error).message, true);
-    }
-    await reload();
+    // カンバンには詳細パネルの開閉状態が別にあるので、一覧のときだけ詳細を開く
+    if (isNew && route.name !== 'project') setDetailId(id);
   };
   return (
     <>
-      <EntryDialog open={dialog.kind === 'entry'} entry={entry} initialTags={newTags}
-        onClose={close} onShowPrompt={showPrompt}
-        onSaved={(id, isNew) => void onEntrySaved(id, isNew)} />
+      <EntryDialog open={dialog.kind === 'entry'} entry={entry} initialTags={newTags} initialProjects={newProjects}
+        onClose={close} onShowPrompt={showPrompt} onSaved={onEntrySaved} />
       <BibtexDialog open={dialog.kind === 'bibtex'} ids={dialog.kind === 'bibtex' ? dialog.ids : []} onClose={close} />
       <BulkTagDialog open={dialog.kind === 'aiTags'} ids={dialog.kind === 'aiTags' ? dialog.ids : []} onClose={close} />
       <SaveFilterDialog open={dialog.kind === 'saveFilter'}

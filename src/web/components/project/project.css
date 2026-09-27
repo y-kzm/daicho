@@ -63,23 +63,6 @@
 .aep-hint { flex: 1; color: var(--ink-soft, #5B6B85); font-size: 11px; }
 
 /* ---------- テーブル表示 ---------- */
-.ptab-wrap { overflow-x: auto; border: 1px solid var(--line, #DAD6CA); border-radius: 4px; background: var(--card, #fff); }
-.ptab { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-.ptab th { background: var(--paper, #F7F6F1); text-align: left; font-size: 11px; letter-spacing: .06em; color: var(--ink-soft, #5B6B85); font-weight: 700; padding: 7px 8px; border-bottom: 1px solid var(--line, #DAD6CA); white-space: nowrap; }
-.ptab td { padding: 6px 8px; border-bottom: 1px solid var(--line-soft, #E8E5DC); vertical-align: top; }
-.ptab tbody tr { cursor: pointer; }
-.ptab tbody tr:hover { background: var(--line-soft, #E8E5DC); }
-.ptab tbody tr.on { background: #E3ECFA; }
-.ptab-star { color: #C08A1E; width: 1.5em; }
-.ptab-title { font-weight: 700; min-width: 240px; }
-.ptab-mono { font-family: "SFMono-Regular", Consolas, "Courier New", monospace; font-size: 11.5px; white-space: nowrap; }
-.ptab-tags { color: var(--ink-soft, #5B6B85); font-size: 11.5px; }
-.ptab-memo { max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-soft, #5B6B85); }
-.ptab-cite { font: inherit; font-size: 12px; padding: 2px 4px; border: 1px solid var(--line, #DAD6CA); border-radius: 4px; background: var(--card, #fff); }
-.ptab-cite.c気になる { color: #8A6D1D; border-color: #C9A227; }
-.ptab-cite.c引用候補 { color: #7A4E9E; border-color: #9C6FC4; }
-.ptab-cite.c引用する { color: var(--r-done, #2E6B4F); border-color: var(--r-done, #2E6B4F); font-weight: 700; }
-.ptab-cite.c引用しない { color: var(--ink-soft, #5B6B85); border-style: dashed; }
 .pv-empty { color: var(--ink-soft, #5B6B85); text-align: center; padding: 50px 0; font-size: 13px; }
 
 /* ---------- ワークスペース ---------- */
@@ -94,10 +77,6 @@
 .pv-count { color: var(--ink-soft, #5B6B85); font-size: 12px; }
 .pv-badge { font-size: 11px; color: var(--ink-soft, #5B6B85); border: 1px dashed var(--line, #DAD6CA); border-radius: 3px; padding: 0 6px; }
 .pv-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.pv-seg { display: inline-flex; border: 1px solid var(--line, #DAD6CA); border-radius: 4px; overflow: hidden; }
-.pv-seg button { border: 0; background: var(--card, #fff); color: var(--ink-soft, #5B6B85); padding: 5px 12px; font-size: 12.5px; cursor: pointer; }
-.pv-seg button + button { border-left: 1px solid var(--line, #DAD6CA); }
-.pv-seg button.on { background: var(--ink, #1F2C46); color: #fff; }
 .pv-missing { padding: 60px 20px; text-align: center; color: var(--ink-soft, #5B6B85); }
 @media (max-width: 1400px) {
   .pv { grid-template-columns: minmax(0, 1fr) 320px; }

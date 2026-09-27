@@ -5,12 +5,10 @@ import { isEditableTarget } from '../../lib/keys';
 import { navigate } from '../../lib/router';
 import { useAppData } from '../../state/AppDataContext';
 import { BIBTEX_LIMIT, BIBTEX_LIMIT_MESSAGE } from '../../api';
-import { useSessionState } from '../../state/useUiState';
 import { useToast } from '../../state/useToast';
 import { Kanban } from './Kanban';
-import { ProjectHeader, type ProjectViewMode } from './ProjectHeader';
+import { ProjectHeader } from './ProjectHeader';
 import { ProjectPanel } from './ProjectPanel';
-import { ProjectTable } from './ProjectTable';
 import './project.css';
 
 interface Props { projectId: number; onEdit: (id: number) => void; onBibtex: (ids: number[]) => void }
@@ -19,7 +17,6 @@ export function ProjectView({ projectId, onEdit, onBibtex }: Props) {
   const { data, projectById } = useAppData();
   const toast = useToast();
   const project = projectById(projectId);
-  const [view, setView] = useSessionState<ProjectViewMode>(`daicho.project.${projectId}.view`, 'kanban');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const ids = useMemo(() => projectEntryIds(data.entries, projectId, CITE_STATES), [data.entries, projectId]);
 
@@ -54,16 +51,13 @@ export function ProjectView({ projectId, onEdit, onBibtex }: Props) {
     onBibtex(target);
   };
   const select = (id: number) => setSelectedId((cur) => (cur === id ? null : id));
-  const mode: ProjectViewMode = view === 'table' ? 'table' : 'kanban'; // 壊れた sessionStorage 値はカンバン扱い
 
   return (
     <div className="pv">
       <div className="pv-main">
-        <ProjectHeader project={project} count={ids.length} view={mode} onView={setView}
+        <ProjectHeader project={project} count={ids.length}
           onBibtex={openBibtex} onPicked={(picked) => setSelectedId(picked[0] ?? null)} />
-        {mode === 'kanban'
-          ? <Kanban projectId={projectId} entries={data.entries} selectedId={selectedId} onSelect={select} />
-          : <ProjectTable projectId={projectId} entries={data.entries} selectedId={selectedId} onSelect={select} />}
+        <Kanban projectId={projectId} entries={data.entries} selectedId={selectedId} onSelect={select} />
       </div>
       <ProjectPanel key={projectId} project={project} entryId={selectedId}
         onCloseDetail={() => setSelectedId(null)} onEdit={onEdit} />

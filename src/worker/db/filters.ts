@@ -5,7 +5,7 @@ import { idList, sameIdSet, str } from '../validate';
 import { FILTERS_SQL, rowToFilter, type FilterRow } from './app-data';
 
 const SORT_KEYS: readonly SortKey[] = ['added', 'title', 'year', 'venue', 'core', 'read', 'priority', 'lastOpened'];
-const GROUP_KEYS: readonly GroupKey[] = ['none', 'year', 'read', 'priority', 'firstTag', 'venue'];
+const GROUP_KEYS: readonly GroupKey[] = ['none', 'year', 'read', 'priority', 'firstTag', 'venue', 'cite'];
 const TAG_MODES = ['any', 'all'] as const;
 const SORT_DIRS = ['asc', 'desc'] as const;
 

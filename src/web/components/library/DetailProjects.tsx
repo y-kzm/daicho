@@ -55,7 +55,7 @@ export function DetailProjects({ e, projectId }: Props) {
           const info = e.cites[String(p.id)]!;
           return (
             <li key={p.id}>
-              <button type="button" className="linkbtn" onClick={() => navigate({ name: 'project', id: p.id })}>{p.name}</button>
+              <button type="button" className="linkbtn" title="このプロジェクトを開く" onClick={() => navigate({ name: 'library', scope: p.id })}>{p.name}</button>
               <select className={'cite c' + info.state} aria-label={`${p.name} での引用状態`} value={info.state}
                 onChange={(ev) => void setState(p.id, ev.target.value)}>
                 {CITE_STATES.map((s) => <option key={s} value={s}>{s}</option>)}

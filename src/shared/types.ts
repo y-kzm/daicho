@@ -46,6 +46,14 @@ export interface Entry {
 /** 追加・編集フォームから送る形 (cites / starred / priority / lastOpenedAt は別 API で変える) */
 export type EntryInput = Omit<Entry, 'id' | 'added' | 'cites' | 'starred' | 'priority' | 'lastOpenedAt'>;
 
+/** 追加と同時に入れるプロジェクト (POST /api/entries の projects) */
+export interface EntryProjectInput {
+  projectId: number;
+  state: CiteState;
+}
+/** 1 回の追加で指定できるプロジェクト数の上限 */
+export const ENTRY_PROJECTS_MAX = 20;
+
 export interface Project {
   id: number;
   name: string;
@@ -56,7 +64,8 @@ export interface Project {
 }
 
 export type SortKey = 'added' | 'title' | 'year' | 'venue' | 'core' | 'read' | 'priority' | 'lastOpened';
-export type GroupKey = 'none' | 'year' | 'read' | 'priority' | 'firstTag' | 'venue';
+/** 'cite' はプロジェクトを開いているときだけ意味を持つ (引用状態ごと) */
+export type GroupKey = 'none' | 'year' | 'read' | 'priority' | 'firstTag' | 'venue' | 'cite';
 
 export interface FilterQuery {
   search?: string;
@@ -87,6 +96,8 @@ export type BulkOp =
   | { type: 'read'; state: ReadState }
   | { type: 'flags'; starred?: boolean; priority?: Priority }
   | { type: 'project'; projectId: number; state: CiteState }
+  /** プロジェクトから外す (論文そのものは残す) */
+  | { type: 'unproject'; projectId: number }
   | { type: 'delete' };
 
 export interface AppData {

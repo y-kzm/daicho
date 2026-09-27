@@ -4,13 +4,15 @@ interface Props {
   label: ReactNode;
   title?: string;
   className?: string;
+  /** 外側の要素に足すクラス (幅いっぱいのボタンにするときなど) */
+  wrapClassName?: string;
   align?: 'left' | 'right';
   /** close を呼ぶとパネルを閉じる */
   children: (close: () => void) => ReactNode;
 }
 
 /** ボタン + 浮きパネル。外側クリックと Esc で閉じる (Esc は一覧のキー操作へ流さない) */
-export function Popover({ label, title, className = 'sbtn', align = 'left', children }: Props) {
+export function Popover({ label, title, className = 'sbtn', wrapClassName = '', align = 'left', children }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
 
@@ -31,7 +33,7 @@ export function Popover({ label, title, className = 'sbtn', align = 'left', chil
   }, [open]);
 
   return (
-    <span className={'popover' + (open ? ' open' : '')} ref={ref}>
+    <span className={'popover' + (open ? ' open' : '') + (wrapClassName ? ' ' + wrapClassName : '')} ref={ref}>
       <button type="button" className={className} title={title} aria-expanded={open}
         onClick={(ev) => { ev.stopPropagation(); setOpen((v) => !v); }}>
         {label}

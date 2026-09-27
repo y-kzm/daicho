@@ -4,6 +4,7 @@ import { App } from './components/App';
 import { AppDataProvider } from './state/AppDataContext';
 import { ToastProvider } from './state/useToast';
 import './styles.css';
+import './scope.css';
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

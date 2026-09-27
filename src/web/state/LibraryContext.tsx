@@ -1,8 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react';
 import type { FilterQuery } from '../../shared/types';
+import { navigate } from '../lib/router';
+import { scopedKey } from '../lib/scope';
 import { DEFAULT_QUERY, sourceQuery, type LibrarySource } from '../lib/smart';
-import { STORAGE_KEYS } from '../lib/storage';
+import { browserStorage, STORAGE_KEYS, writeStored } from '../lib/storage';
 import { useAppData } from './AppDataContext';
+import { useScope } from './ScopeContext';
 import { useSessionState } from './useUiState';
 
 export interface LibraryValue {
@@ -14,16 +17,20 @@ export interface LibraryValue {
   /** 表示元を切り替える。query を省略すると表示元の既定条件にする */
   selectSource: (src: LibrarySource, query?: FilterQuery) => void;
   setDetailId: (id: number | null) => void;
+  /** 指定した範囲 (null = 全体) の一覧で、その論文の詳細を開く */
+  openEntryIn: (scope: number | null, id: number) => void;
 }
 
 const ALL: LibrarySource = { kind: 'builtin', id: 'all' };
 const Ctx = createContext<LibraryValue | null>(null);
 
-export function LibraryProvider({ children }: { children: ReactNode }) {
+/** scope ごとに `key` を変えて作り直すこと (保存先のキーは初回にだけ読む) */
+export function LibraryProvider({ scope, children }: { scope: number | null; children: ReactNode }) {
   const { data, projectById } = useAppData();
-  const [source, setSource] = useSessionState<LibrarySource>(STORAGE_KEYS.source, ALL);
-  const [query, setQuery] = useSessionState<FilterQuery>(STORAGE_KEYS.query, DEFAULT_QUERY);
-  const [detailId, setDetailId] = useSessionState<number | null>(STORAGE_KEYS.detail, null);
+  const { entries: scoped } = useScope();
+  const [source, setSource] = useSessionState<LibrarySource>(scopedKey(STORAGE_KEYS.source, scope), ALL);
+  const [query, setQuery] = useSessionState<FilterQuery>(scopedKey(STORAGE_KEYS.query, scope), DEFAULT_QUERY);
+  const [detailId, setDetailId] = useSessionState<number | null>(scopedKey(STORAGE_KEYS.detail, scope), null);
   const savedFilters = data.savedFilters;
 
   const selectSource = useCallback((src: LibrarySource, q?: FilterQuery) => {
@@ -48,14 +55,21 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     });
   }, [data.tags, projectById, setQuery]);
 
-  // 削除されたエントリの詳細パネルを閉じる
+  // 削除されたエントリ、開いているプロジェクトから外れたエントリの詳細パネルを閉じる
   useEffect(() => {
-    if (detailId !== null && !data.entries.some((e) => e.id === detailId)) setDetailId(null);
-  }, [data.entries, detailId, setDetailId]);
+    if (detailId !== null && !scoped.some((e) => e.id === detailId)) setDetailId(null);
+  }, [scoped, detailId, setDetailId]);
+
+  const openEntryIn = useCallback((target: number | null, id: number) => {
+    if (target === scope) setDetailId(id);
+    // 別の範囲は Provider ごと作り直されるので、その範囲の保存先へ先に書いておく
+    else writeStored(browserStorage('session'), scopedKey(STORAGE_KEYS.detail, target), id);
+    navigate(target === null ? { name: 'library' } : { name: 'library', scope: target });
+  }, [scope, setDetailId]);
 
   const value = useMemo<LibraryValue>(
-    () => ({ source, query, detailId, setQuery, selectSource, setDetailId }),
-    [source, query, detailId, setQuery, selectSource, setDetailId],
+    () => ({ source, query, detailId, setQuery, selectSource, setDetailId, openEntryIn }),
+    [source, query, detailId, setQuery, selectSource, setDetailId, openEntryIn],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

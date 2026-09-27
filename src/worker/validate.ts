@@ -1,5 +1,5 @@
-import type { BulkOp, CiteState, EntryInput, Priority, ReadState } from '../shared/types';
-import { BULK_MAX, CITE_STATES, PRIORITIES, READ_STATES } from '../shared/types';
+import type { BulkOp, CiteState, EntryInput, EntryProjectInput, Priority, ReadState } from '../shared/types';
+import { BULK_MAX, CITE_STATES, ENTRY_PROJECTS_MAX, PRIORITIES, READ_STATES } from '../shared/types';
 import { AppError } from './errors';
 
 export function str(v: unknown): string {
@@ -58,6 +58,21 @@ export function parseEntryInput(body: unknown): EntryInput {
   };
 }
 
+/** POST /api/entries の projects。省略・null は空。同じプロジェクトの重複指定は不正 */
+export function parseEntryProjects(v: unknown): EntryProjectInput[] {
+  if (v === undefined || v === null) return [];
+  if (!Array.isArray(v)) throw new AppError('プロジェクトの指定が不正です。');
+  if (v.length > ENTRY_PROJECTS_MAX) throw new AppError(`一度に指定できるプロジェクトは ${ENTRY_PROJECTS_MAX} 件までです。`);
+  const seen = new Set<number>();
+  return v.map((item) => {
+    const o = (item && typeof item === 'object' && !Array.isArray(item) ? item : {}) as Record<string, unknown>;
+    const projectId = positiveInt(o.projectId);
+    if (seen.has(projectId)) throw new AppError('プロジェクトの指定が不正です。');
+    seen.add(projectId);
+    return { projectId, state: parseCiteState(o.state) };
+  });
+}
+
 export function parseIdParam(s: string): number {
   if (!/^[1-9]\d*$/.test(s)) throw new AppError('不正な ID です。');
   return Number(s);
@@ -114,6 +129,8 @@ export function parseBulkOp(v: unknown): BulkOp {
       return { type: 'flags', starred: optBool(o.starred), priority: optPriority(o.priority) };
     case 'project':
       return { type: 'project', projectId: positiveInt(o.projectId), state: parseCiteState(o.state) };
+    case 'unproject':
+      return { type: 'unproject', projectId: positiveInt(o.projectId) };
     case 'delete':
       return { type: 'delete' };
     default:

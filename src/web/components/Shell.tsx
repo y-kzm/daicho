@@ -3,8 +3,9 @@ import { BULK_MAX, CITE_STATES } from '../../shared/types';
 import { BIBTEX_LIMIT, BIBTEX_LIMIT_MESSAGE } from '../api';
 import { isPaletteShortcut } from '../lib/keys';
 import { projectEntryIds } from '../lib/kanban';
-import { navigate, type Route } from '../lib/router';
+import { navigate, withScope, type Route } from '../lib/router';
 import { applyQuery, countFor, sourceLabel } from '../lib/smart';
+import { useScope } from '../state/ScopeContext';
 import { useAppData } from '../state/AppDataContext';
 import { useDialogs } from '../state/DialogContext';
 import { useLibrary } from '../state/LibraryContext';
@@ -16,8 +17,9 @@ import { TopBar } from './TopBar';
 interface Props { route: Route; children: ReactNode }
 
 export function Shell({ route, children }: Props) {
-  const { data, projectById } = useAppData();
-  const { source, query, selectSource, setDetailId } = useLibrary();
+  const { data } = useAppData();
+  const { scope, project, entries, apply } = useScope();
+  const { source, query, selectSource, openEntryIn } = useLibrary();
   const { open } = useDialogs();
   const toast = useToast();
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -43,7 +45,7 @@ export function Shell({ route, children }: Props) {
         // プロジェクト画面では「現在の一覧」= そのプロジェクトの全エントリ
         const ids = route.name === 'project'
           ? projectEntryIds(data.entries, route.id, CITE_STATES)
-          : applyQuery(data.entries, query, now).map((e) => e.id);
+          : applyQuery(entries, apply(query), now).map((e) => e.id);
         if (route.name === 'project' && !ids.length) toast('対象のエントリがありません。', true);
         else if (ids.length > BIBTEX_LIMIT) toast(BIBTEX_LIMIT_MESSAGE, true);
         else open({ kind: 'bibtex', ids });
@@ -53,36 +55,39 @@ export function Shell({ route, children }: Props) {
         open({ kind: 'merge' });
         break;
       case 'aiTags': {
-        const ids = data.entries.filter((e) => !e.tags.length).map((e) => e.id).slice(0, BULK_MAX);
+        const ids = entries.filter((e) => !e.tags.length).map((e) => e.id).slice(0, BULK_MAX);
         if (!ids.length) toast('対象のエントリがありません。', true);
         else open({ kind: 'aiTags', ids });
         break;
       }
       case 'stats':
-        navigate({ name: 'stats' });
+        navigate(withScope({ name: 'stats' }, scope));
         break;
       case 'library':
         selectSource({ kind: 'builtin', id: 'all' });
-        navigate({ name: 'library' });
+        navigate(withScope({ name: 'library' }, scope));
         break;
       default:
         break;
     }
   };
+  // プロジェクトの論文はその一覧で、それ以外は全体の一覧で開く
   const pickEntry = (id: number) => {
-    navigate({ name: 'library' });
-    setDetailId(id);
+    const inside = scope !== null && entries.some((e) => e.id === id);
+    openEntryIn(inside ? scope : null, id);
   };
 
-  const project = route.name === 'project' ? projectById(route.id) : undefined;
-  const title = route.name === 'stats' ? '統計' : route.name === 'project' ? project?.name ?? 'プロジェクト' : sourceLabel(source, data.savedFilters);
-  const count = route.name === 'library' ? countFor(data.entries, query, now) : route.name === 'project' ? project?.count ?? null : data.entries.length;
+  const listTitle = scope !== null && source.kind === 'builtin' && source.id === 'all' ? '一覧' : sourceLabel(source, data.savedFilters);
+  const title = route.name === 'stats' ? '統計' : route.name === 'project' ? 'カンバン' : listTitle;
+  const count = route.name === 'library' ? countFor(entries, apply(query), now) : entries.length;
 
   return (
     <div className="shell">
       <Sidebar route={route} />
       <div className="shell-main">
-        <TopBar title={title} count={count} onOpenPalette={() => setPaletteOpen(true)} onAdd={() => open({ kind: 'entry', id: null })} />
+        <TopBar title={title} scopeName={scope === null ? undefined : project?.name} count={count}
+          addLabel={scope === null ? '+ 追加' : '+ このプロジェクトに追加'}
+          onOpenPalette={() => setPaletteOpen(true)} onAdd={() => open({ kind: 'entry', id: null })} />
         <main className="page">{children}</main>
       </div>
       <Palette open={paletteOpen} onClose={() => setPaletteOpen(false)} onCommand={runCommand} onPickEntry={pickEntry} />

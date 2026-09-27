@@ -1,5 +1,5 @@
-import type { Entry, GroupKey, Priority, ReadState, SortKey } from '../../shared/types';
-import { PRIORITY_LABELS, READ_STATES } from '../../shared/types';
+import type { CiteState, Entry, GroupKey, Priority, ReadState, SortKey } from '../../shared/types';
+import { CITE_STATES, PRIORITY_LABELS, READ_STATES } from '../../shared/types';
 
 export type ColumnKey = 'star' | 'title' | 'year' | 'venue' | 'core' | 'read' | 'priority' | 'tags' | 'projects' | 'added' | 'lastOpened';
 
@@ -27,8 +27,19 @@ export const SORT_LABELS: Record<SortKey, string> = {
 };
 
 export const GROUP_LABELS: Record<GroupKey, string> = {
-  none: 'なし', year: '年', read: '読了状態', priority: '優先度', firstTag: '先頭タグ', venue: '会議・誌名',
+  none: 'なし', year: '年', read: '読了状態', priority: '優先度', firstTag: '先頭タグ', venue: '会議・誌名', cite: '引用状態',
 };
+
+/** グループ化の選択肢。'cite' はプロジェクトを開いているときだけ出す */
+export function groupKeysFor(projectId: number | undefined): GroupKey[] {
+  const keys = Object.keys(GROUP_LABELS) as GroupKey[];
+  return projectId === undefined ? keys.filter((k) => k !== 'cite') : keys;
+}
+
+/** 'cite' はプロジェクトが無いと分けられないので、その場合は 'none' として扱う */
+export function effectiveGroup(by: GroupKey, projectId: number | undefined): GroupKey {
+  return by === 'cite' && projectId === undefined ? 'none' : by;
+}
 
 export function venueOf(e: Entry): string {
   return (e.conference || e.journal).trim();
@@ -90,8 +101,9 @@ export function nextSort(cur: { key: SortKey; dir: 'asc' | 'desc' }, clicked: So
 
 export interface Group { key: string; label: string; entries: Entry[] }
 
-function groupKeyOf(e: Entry, by: GroupKey): string {
+function groupKeyOf(e: Entry, by: GroupKey, projectId?: number): string {
   switch (by) {
+    case 'cite': return projectId === undefined ? '' : e.cites[String(projectId)]?.state ?? '';
     case 'year': return /^\d{4}$/.test(e.year.trim()) ? e.year.trim() : '';
     case 'read': return e.read || '未読';
     case 'priority': return String(e.priority);
@@ -107,6 +119,7 @@ function groupLabel(key: string, by: GroupKey): string {
   if (by === 'year') return '年なし';
   if (by === 'firstTag') return 'タグなし';
   if (by === 'venue') return '会議・誌名なし';
+  if (by === 'cite') return 'プロジェクト外';
   return '';
 }
 
@@ -120,6 +133,11 @@ function compareGroupKeys(by: GroupKey): (a: string, b: string) => number {
         const ib = READ_STATES.indexOf(b as ReadState);
         return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
       }
+      case 'cite': {
+        const ia = CITE_STATES.indexOf(a as CiteState);
+        const ib = CITE_STATES.indexOf(b as CiteState);
+        return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+      }
       default: return a.localeCompare(b, 'ja');
     }
   };
@@ -130,12 +148,14 @@ function compareGroupKeys(by: GroupKey): (a: string, b: string) => number {
   };
 }
 
-/** 入力の並び (ソート済み) を保ったままグループに分ける。'none' は key '' の 1 グループ */
-export function groupEntries(entries: Entry[], by: GroupKey): Group[] {
+/** 入力の並び (ソート済み) を保ったままグループに分ける。'none' は key '' の 1 グループ。
+ * projectId は 'cite' (引用状態) で分けるときに使う */
+export function groupEntries(entries: Entry[], groupBy: GroupKey, projectId?: number): Group[] {
+  const by = effectiveGroup(groupBy, projectId);
   if (by === 'none') return [{ key: '', label: '', entries }];
   const map = new Map<string, Entry[]>();
   for (const e of entries) {
-    const k = groupKeyOf(e, by);
+    const k = groupKeyOf(e, by, projectId);
     const list = map.get(k);
     if (list) list.push(e);
     else map.set(k, [e]);

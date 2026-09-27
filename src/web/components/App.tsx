@@ -1,6 +1,9 @@
-import { useRoute, type Route } from '../lib/router';
+import { useEffect } from 'react';
+import { navigate, scopeOf, useRoute, withScope, type Route } from '../lib/router';
+import { useAppData } from '../state/AppDataContext';
 import { DialogProvider, useDialogs } from '../state/DialogContext';
 import { LibraryProvider } from '../state/LibraryContext';
+import { ScopeProvider } from '../state/ScopeContext';
 import { AppDialogs } from './AppDialogs';
 import { LibraryView } from './library/LibraryView';
 import { ProjectView } from './project/ProjectView';
@@ -10,22 +13,26 @@ import { StatsView } from './StatsView';
 export type { DialogState } from '../state/DialogContext';
 
 export function App() {
-  return (
-    <LibraryProvider>
-      <DialogProvider>
-        <Routes />
-      </DialogProvider>
-    </LibraryProvider>
-  );
-}
-
-function Routes() {
   const route = useRoute();
+  const { projectById } = useAppData();
+  const wanted = scopeOf(route);
+  const missing = wanted !== null && !projectById(wanted);
+  // 一覧・統計が削除済みのプロジェクトを指していたら全体へ戻す (カンバンは「見つかりません」を出す)
+  useEffect(() => {
+    if (missing && route.name !== 'project') navigate(withScope(route, null));
+  }, [missing, route]);
+  const scope = missing ? null : wanted;
+
   return (
-    <>
-      <Shell route={route}><RouteBody route={route} /></Shell>
-      <AppDialogs />
-    </>
+    <DialogProvider>
+      <ScopeProvider scope={scope}>
+        {/* key: 範囲ごとに絞り込み・開いている詳細を別々に持つ */}
+        <LibraryProvider key={scope ?? 'all'} scope={scope}>
+          <Shell route={route}><RouteBody route={route} /></Shell>
+          <AppDialogs />
+        </LibraryProvider>
+      </ScopeProvider>
+    </DialogProvider>
   );
 }
 

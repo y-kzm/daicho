@@ -5,18 +5,14 @@ import { useToast } from '../../state/useToast';
 import { AddEntryPicker } from './AddEntryPicker';
 import { renameProject, setProjectArchived } from './projectActions';
 
-export type ProjectViewMode = 'kanban' | 'table';
-
 interface Props {
   project: Project;
   count: number;
-  view: ProjectViewMode;
-  onView: (v: ProjectViewMode) => void;
   onBibtex: (onlyCite: boolean) => void;
   onPicked: (ids: number[]) => void;
 }
 
-export function ProjectHeader({ project, count, view, onView, onBibtex, onPicked }: Props) {
+export function ProjectHeader({ project, count, onBibtex, onPicked }: Props) {
   const { reload } = useAppData();
   const toast = useToast();
   const [editing, setEditing] = useState(false);
@@ -52,11 +48,7 @@ export function ProjectHeader({ project, count, view, onView, onBibtex, onPicked
         {project.archived && <span className="pv-badge">アーカイブ済み</span>}
       </div>
       <div className="pv-actions">
-        <div className="pv-seg" role="group" aria-label="表示切替">
-          <button type="button" className={view === 'kanban' ? 'on' : ''} aria-pressed={view === 'kanban'} onClick={() => onView('kanban')}>カンバン</button>
-          <button type="button" className={view === 'table' ? 'on' : ''} aria-pressed={view === 'table'} onClick={() => onView('table')}>テーブル</button>
-        </div>
-        <AddEntryPicker projectId={project.id} onPicked={onPicked} />
+        <AddEntryPicker projectId={project.id} label="ライブラリから追加" onPicked={onPicked} />
         <button type="button" className="pv-btn" onClick={() => onBibtex(true)}>BibTeX (引用する のみ)</button>
         <button type="button" className="pv-btn" onClick={() => onBibtex(false)}>BibTeX (全部)</button>
         <button type="button" className="pv-btn" onClick={() => void setProjectArchived(project, !project.archived, { reload, toast })}>

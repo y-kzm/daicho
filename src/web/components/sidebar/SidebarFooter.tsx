@@ -16,12 +16,13 @@ const SERVICES: [string, string, string][] = [
   ['https://tex2e.github.io/rfc-translater/html/index.html', 'RFC Translater', 'RFC エントリのリンク先 (日本語訳)'],
 ];
 
-export function SidebarFooter({ route }: { route: Route }) {
+/** showStats: プロジェクトを開いている間は、統計を「このプロジェクト」の中に出すのでここでは出さない */
+export function SidebarFooter({ route, showStats = true }: { route: Route; showStats?: boolean }) {
   const { data } = useAppData();
   return (
     <>
       <h3>その他</h3>
-      <SideItem label="統計" on={route.name === 'stats'} onClick={() => navigate({ name: 'stats' })} />
+      {showStats && <SideItem label="統計" on={route.name === 'stats'} onClick={() => navigate({ name: 'stats' })} />}
 
       <details className="side-acc">
         <summary>リンク</summary>

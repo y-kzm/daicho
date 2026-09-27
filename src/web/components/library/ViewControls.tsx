@@ -9,17 +9,20 @@ interface Props {
   view: ViewMode;
   onView: (v: ViewMode) => void;
   groupBy: GroupKey;
+  /** 選べるグループ化 (引用状態はプロジェクトを開いているときだけ) */
+  groupKeys: GroupKey[];
   onGroupBy: (g: GroupKey) => void;
   sort: TableSort;
   onSort: (s: TableSort) => void;
   columns: ColumnKey[];
+  /** 列メニューに出さない列 */
+  hiddenColumns?: ColumnKey[];
   onColumns: (c: ColumnKey[]) => void;
 }
 
 const SORT_KEYS = Object.keys(SORT_LABELS) as SortKey[];
-const GROUP_KEYS = Object.keys(GROUP_LABELS) as GroupKey[];
 
-export function ViewControls({ view, onView, groupBy, onGroupBy, sort, onSort, columns, onColumns }: Props) {
+export function ViewControls({ view, onView, groupBy, groupKeys, onGroupBy, sort, onSort, columns, hiddenColumns, onColumns }: Props) {
   return (
     <div className="lib-toolbar">
       <label>
@@ -35,7 +38,7 @@ export function ViewControls({ view, onView, groupBy, onGroupBy, sort, onSort, c
       <label>
         グループ{' '}
         <select value={groupBy} onChange={(ev) => onGroupBy(ev.target.value as GroupKey)}>
-          {GROUP_KEYS.map((k) => <option key={k} value={k}>{GROUP_LABELS[k]}</option>)}
+          {groupKeys.map((k) => <option key={k} value={k}>{GROUP_LABELS[k]}</option>)}
         </select>
       </label>
       <span className="spacer" />
@@ -43,7 +46,7 @@ export function ViewControls({ view, onView, groupBy, onGroupBy, sort, onSort, c
         <button type="button" className={view === 'table' ? 'on' : ''} onClick={() => onView('table')}>テーブル</button>
         <button type="button" className={view === 'cards' ? 'on' : ''} onClick={() => onView('cards')}>カード</button>
       </div>
-      {view === 'table' && <ColumnMenu columns={columns} onChange={onColumns} />}
+      {view === 'table' && <ColumnMenu columns={columns} hidden={hiddenColumns} onChange={onColumns} />}
     </div>
   );
 }

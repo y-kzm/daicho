@@ -1,14 +1,16 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { flushSync } from 'react-dom';
-import type { CoreResult, Entry, EntryInput, LlmProvider } from '../../../shared/types';
+import type { CoreResult, Entry, EntryInput, EntryProjectInput, LlmProvider } from '../../../shared/types';
 import { READ_STATES } from '../../../shared/types';
 import { api } from '../../api';
+import { sortByOrder } from '../../lib/order';
 import { autofillVenueRatings, buildVenueMaps, coreQueryHint } from '../../lib/venue';
 import { useAppData } from '../../state/AppDataContext';
 import { useToast } from '../../state/useToast';
 import { Modal } from '../Modal';
 import { CoreResults } from './CoreResults';
 import { EntryDialogTools } from './EntryDialogTools';
+import { ProjectPicker } from './ProjectPicker';
 import { TagPicker } from './TagPicker';
 
 export interface EntryForm {
@@ -27,6 +29,8 @@ interface Props {
   open: boolean;
   entry: Entry | null;
   initialTags: string[];
+  /** 新規追加のときに選択済みにするプロジェクト (開いているプロジェクト) */
+  initialProjects: EntryProjectInput[];
   onClose: () => void;
   /** 保存と再読み込みの完了後に呼ぶ */
   onSaved: (id: number, isNew: boolean) => void;
@@ -41,11 +45,17 @@ export function EntryDialog(props: Props) {
   );
 }
 
-function EntryDialogBody({ entry, initialTags, onClose, onSaved, onShowPrompt }: Props) {
+function EntryDialogBody({ entry, initialTags, initialProjects, onClose, onSaved, onShowPrompt }: Props) {
   const { data, reload } = useAppData();
   const toast = useToast();
   const [f, setF] = useState<EntryForm>(() => toForm(entry));
   const [tags, setTags] = useState<string[]>(() => (entry ? [...entry.tags] : [...initialTags]));
+  const [projects, setProjects] = useState<EntryProjectInput[]>(() => (entry ? [] : [...initialProjects]));
+  // 追加先の候補: アーカイブしていないものと、選択済みのもの (アーカイブ済みのプロジェクトを開いている場合)
+  const projectChoices = useMemo(
+    () => sortByOrder(data.projects).filter((p) => !p.archived || initialProjects.some((s) => s.projectId === p.id)),
+    [data.projects, initialProjects],
+  );
   const [provider, setProvider] = useState<LlmProvider>('claude');
   const [core, setCore] = useState<CoreResult | null>(null);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
@@ -144,7 +154,8 @@ function EntryDialogBody({ entry, initialTags, onClose, onSaved, onShowPrompt }:
         await api.updateEntry(entry.id, e);
         id = entry.id;
       } else {
-        id = (await api.addEntry(e)).id;
+        // 開いている間に削除されたプロジェクトは送らない
+        id = (await api.addEntry(e, projects.filter((s) => data.projects.some((p) => p.id === s.projectId)))).id;
       }
       await reload();
       onSaved(id, !entry);
@@ -206,6 +217,9 @@ function EntryDialogBody({ entry, initialTags, onClose, onSaved, onShowPrompt }:
         </label>
         <TagPicker tags={data.tags} selected={tags} busy={!!busy.tags} onSuggest={suggest}
           onToggle={(t) => setTags((cur) => (cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t]))} />
+        {!entry && projectChoices.length > 0 && (
+          <ProjectPicker projects={projectChoices} selected={projects} onChange={setProjects} />
+        )}
         <label className="field full">メモ
           <textarea name="note" placeholder="自分用コメント・自研究との関連など" value={f.note} onChange={(ev) => set('note', ev.target.value)} />
         </label>

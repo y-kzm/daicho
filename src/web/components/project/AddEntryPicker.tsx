@@ -6,7 +6,7 @@ import { venueOf } from '../../lib/table';
 import { useAppData } from '../../state/AppDataContext';
 import { useToast } from '../../state/useToast';
 
-interface Props { projectId: number; onPicked: (ids: number[]) => void }
+interface Props { projectId: number; onPicked: (ids: number[]) => void; label?: string }
 
 const LIMIT = 30;
 const INITIAL_STATE = '気になる';
@@ -31,7 +31,7 @@ function candidates(entries: Entry[], projectId: number, query: string): Entry[]
     .map((x) => x.e);
 }
 
-export function AddEntryPicker({ projectId, onPicked }: Props) {
+export function AddEntryPicker({ projectId, onPicked, label = '論文を追加' }: Props) {
   const { data, reload } = useAppData();
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -102,9 +102,9 @@ export function AddEntryPicker({ projectId, onPicked }: Props) {
   return (
     <div className="aep" ref={rootRef}>
       <button type="button" className="pv-btn primary" aria-expanded={open}
-        onClick={() => (open ? close() : setOpen(true))}>論文を追加</button>
+        onClick={() => (open ? close() : setOpen(true))}>{label}</button>
       {open && (
-        <div className="aep-pop" role="dialog" aria-modal="false" aria-label="論文を追加">
+        <div className="aep-pop" role="dialog" aria-modal="false" aria-label={label}>
           <input className="aep-q" autoFocus value={q} placeholder="タイトル・BibTeX キー・タグで検索"
             onChange={(ev) => { setQ(ev.target.value); setCursor(0); }} onKeyDown={onKeyDown} />
           <ul className="aep-list" role="listbox" aria-multiselectable="true">

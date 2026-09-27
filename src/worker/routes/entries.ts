@@ -9,7 +9,7 @@ import type { Env } from '../env';
 import { AppError } from '../errors';
 import { generateBibkey } from '../services/bibtex';
 import {
-  idList, optBool, optPriority, parseBulkOp, parseEntryInput, parseIdParam, positiveInt, str,
+  idList, optBool, optPriority, parseBulkOp, parseEntryInput, parseEntryProjects, parseIdParam, positiveInt, str,
 } from '../validate';
 import { httpFor, jsonBody } from './context';
 
@@ -31,10 +31,12 @@ entries.post('/merge', async (c) => {
 });
 
 entries.post('/', async (c) => {
-  const input = parseEntryInput(await jsonBody(c));
+  const body = await jsonBody(c);
+  const input = parseEntryInput(body);
+  const projects = parseEntryProjects(body.projects);
   if (!input.bibkey) input.bibkey = await generateBibkey(httpFor(c.env), input);
   input.bibkey = await ensureUniqueBibkey(c.env.DB, input.bibkey, null);
-  const id = await insertEntry(c.env.DB, input, todayJst());
+  const id = await insertEntry(c.env.DB, input, todayJst(), projects);
   return c.json({ id });
 });
 

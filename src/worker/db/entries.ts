@@ -1,4 +1,4 @@
-import type { BulkOp, Entry, EntryInput, Priority } from '../../shared/types';
+import type { BulkOp, Entry, EntryInput, EntryProjectInput, Priority } from '../../shared/types';
 import { AppError, notFound } from '../errors';
 import { assertBulkSize, parseCiteState, parseReadState, str } from '../validate';
 import { loadEntries, type EntryRow } from './app-data';
@@ -23,7 +23,12 @@ async function assertExists(db: D1Database, id: number): Promise<void> {
 /** 挿入・タグ登録を単一の batch (= 1 トランザクション) として実行する。
  * entry_id には last_insert_rowid() ではなく sqlite_sequence を使う。
  * batch 内の entry_tags 挿入自体が row を書き込むため last_insert_rowid() は使えない。 */
-export async function insertEntry(db: D1Database, input: EntryInput, added: string): Promise<number> {
+/** projects を渡すと、追加と同じ batch (= 1 トランザクション) で各プロジェクトの列の末尾に入れる。
+ * 存在しないプロジェクトが 1 つでもあれば、何も追加せずに 404。 */
+export async function insertEntry(
+  db: D1Database, input: EntryInput, added: string, projects: EntryProjectInput[] = [],
+): Promise<number> {
+  for (const p of projects) await assertProjectExists(db, p.projectId);
   const insertStmt = db
     .prepare(`INSERT INTO entries (added, ${COLS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(added, ...values(input));
@@ -32,6 +37,15 @@ export async function insertEntry(db: D1Database, input: EntryInput, added: stri
     insertStmt,
     ...ensureTagStatements(db, input.tags),
     ...entryTagStatements(db, newIdSql, input.tags),
+    ...projects.map((p) =>
+      db
+        .prepare(
+          'INSERT INTO cites (entry_id, project_id, state, position) ' +
+            `VALUES (${newIdSql.sql}, ?1, ?2, ` +
+            '(SELECT COALESCE(MAX(position), -1) + 1 FROM cites WHERE project_id = ?1 AND state = ?2))',
+        )
+        .bind(p.projectId, p.state),
+    ),
   ]);
   const row = await db.prepare(`SELECT seq FROM sqlite_sequence WHERE name = 'entries'`).first<{ seq: number }>();
   return Number(row?.seq ?? 0);
@@ -173,6 +187,8 @@ export function bulkStatements(db: D1Database, ids: number[], op: BulkOp): D1Pre
           .bind(op.projectId, op.state, json),
       ];
     }
+    case 'unproject':
+      return [db.prepare(`DELETE FROM cites WHERE project_id = ? AND entry_id IN (${IDS})`).bind(op.projectId, json)];
     case 'delete':
       return [db.prepare(`DELETE FROM entries WHERE id IN (${IDS})`).bind(json)];
   }
@@ -186,7 +202,7 @@ export async function bulkApply(db: D1Database, ids: number[], op: BulkOp): Prom
   if (!uniq.length) throw new AppError('対象のエントリがありません。');
   const targets = await getEntriesByIds(db, uniq);
   if (!targets.length) throw notFound('エントリ');
-  if (op.type === 'project') await assertProjectExists(db, op.projectId);
+  if (op.type === 'project' || op.type === 'unproject') await assertProjectExists(db, op.projectId);
   await db.batch(bulkStatements(db, targets.map((e) => e.id), op));
 }
 

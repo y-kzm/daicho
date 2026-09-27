@@ -2,7 +2,7 @@ import type { AppData, Entry } from '../../shared/types';
 import { venueOf } from './table';
 
 export type PaletteItem =
-  | { kind: 'entry'; id: number; title: string; sub: string }
+  | { kind: 'entry'; id: number; title: string; sub: string; outside?: boolean }
   | { kind: 'project'; id: number; name: string }
   | { kind: 'tag'; name: string }
   | { kind: 'command'; id: string; label: string };
@@ -38,19 +38,28 @@ export function paletteItemKey(item: PaletteItem): string {
 
 const KIND_RANK: Record<PaletteItem['kind'], number> = { command: 0, project: 1, tag: 2, entry: 3 };
 
-export function searchPalette(q: string, data: AppData, commands: PaletteItem[], limit = 30): PaletteItem[] {
+/**
+ * scope を渡すと (プロジェクトを開いているとき)、そのプロジェクトの論文を同点の中で先に並べ、
+ * それ以外の論文には outside を付ける。検索対象そのものは常に全体。
+ */
+export function searchPalette(
+  q: string, data: AppData, commands: PaletteItem[], limit = 30, scope: number | null = null,
+): PaletteItem[] {
   if (!q.trim()) return commands.slice(0, limit);
-  const scored: { item: PaletteItem; score: number; order: number }[] = [];
-  const push = (item: PaletteItem, score: number) => {
-    if (score > 0) scored.push({ item, score, order: scored.length });
+  const scored: { item: PaletteItem; score: number; order: number; far: number }[] = [];
+  const push = (item: PaletteItem, score: number, far = 0) => {
+    if (score > 0) scored.push({ item, score, order: scored.length, far });
   };
+  const key = scope === null ? null : String(scope);
   for (const c of commands) if (c.kind === 'command') push(c, scoreMatch(q, c.label));
   for (const p of data.projects) push({ kind: 'project', id: p.id, name: p.name }, scoreMatch(q, p.name));
   for (const t of data.tags) push({ kind: 'tag', name: t }, scoreMatch(q, t));
   for (const e of data.entries) {
     const byTag = e.tags.some((t) => scoreMatch(q, t) > 0) ? 1 : 0;
-    push({ kind: 'entry', id: e.id, title: e.title, sub: entrySub(e) }, Math.max(scoreMatch(q, e.title), scoreMatch(q, e.bibkey), byTag));
+    const outside = key !== null && e.cites[key] === undefined;
+    const item: PaletteItem = { kind: 'entry', id: e.id, title: e.title, sub: entrySub(e), ...(outside ? { outside: true } : {}) };
+    push(item, Math.max(scoreMatch(q, e.title), scoreMatch(q, e.bibkey), byTag), outside ? 1 : 0);
   }
-  scored.sort((a, b) => b.score - a.score || KIND_RANK[a.item.kind] - KIND_RANK[b.item.kind] || a.order - b.order);
+  scored.sort((a, b) => b.score - a.score || KIND_RANK[a.item.kind] - KIND_RANK[b.item.kind] || a.far - b.far || a.order - b.order);
   return scored.slice(0, limit).map((s) => s.item);
 }

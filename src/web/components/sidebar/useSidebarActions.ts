@@ -1,7 +1,7 @@
 import type { Project, SavedFilter } from '../../../shared/types';
 import { api } from '../../api';
 import { moveItem, moveWithinGroup, sortByOrder } from '../../lib/order';
-import { navigate, useRoute } from '../../lib/router';
+import { navigate, scopeOf, useRoute } from '../../lib/router';
 import { useAppData } from '../../state/AppDataContext';
 import { useDialogs } from '../../state/DialogContext';
 import { useLibrary } from '../../state/LibraryContext';
@@ -54,7 +54,7 @@ export function useSidebarActions() {
     addProject: (name: string) => act(async () => {
       const { id } = await api.addProject(name);
       await reload();
-      navigate({ name: 'project', id });
+      navigate({ name: 'library', scope: id });
     }, 'プロジェクトを追加しました'),
     renameProject: (id: number, name: string) => act(async () => { await api.updateProject(id, { name }); await reload(); }, '変更しました'),
     moveProject: (id: number, delta: -1 | 1, group: Project[]) => act(async () => {
@@ -67,7 +67,7 @@ export function useSidebarActions() {
       confirmDelete('プロジェクトを削除', `「${p.name}」を削除します。所属 (引用状態・メモ) も消えます。論文自体は残ります。`, async () => {
         await api.deleteProject(p.id);
         await reload();
-        if (route.name === 'project' && route.id === p.id) navigate({ name: 'library' });
+        if (scopeOf(route) === p.id) navigate({ name: 'library' });
       }),
   };
 }

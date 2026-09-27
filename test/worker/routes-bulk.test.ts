@@ -182,3 +182,25 @@ describe('bulkStatements (set-based)', () => {
     expect(byId(r.json, a).tags).toEqual(['Old', 'Keep', 'N1', 'N2']);
   });
 });
+
+describe('POST /api/entries/bulk unproject', () => {
+  it('removes only the given project membership and keeps the entries', async () => {
+    const p = await seedProject(env.DB, 'P');
+    const q = await seedProject(env.DB, 'Q');
+    await seedCite(env.DB, a, p, '引用する');
+    await seedCite(env.DB, b, p, '気になる');
+    await seedCite(env.DB, a, q, '引用候補');
+    const r = await bulk([a, b, c], { type: 'unproject', projectId: p });
+    expect(r.status).toBe(200);
+    expect(r.json.entries).toHaveLength(3);
+    expect(byId(r.json, a).cites).toEqual({ [String(q)]: { state: '引用候補', position: expect.any(Number), memo: '' } });
+    expect(byId(r.json, b).cites).toEqual({});
+    expect(r.json.projects.find((x) => x.id === p)!.count).toBe(0);
+    expect(r.json.projects.find((x) => x.id === q)!.count).toBe(1);
+  });
+
+  it('404 for a missing project, 400 for a bad project id', async () => {
+    expect((await bulk([a], { type: 'unproject', projectId: 999 })).status).toBe(404);
+    expect((await bulk([a], { type: 'unproject', projectId: 'x' })).status).toBe(400);
+  });
+});

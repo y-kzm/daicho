@@ -1,0 +1,76 @@
+/* プロジェクトの切り替えと、プロジェクトを開いているときの表示 */
+
+/* ---------- サイドバー先頭の切り替え ---------- */
+.popover.scope-switch { display: block; margin-bottom: 14px; }
+.scope-btn {
+  display: grid; grid-template-columns: 1fr auto; grid-template-areas: "cap caret" "name caret";
+  align-items: center; column-gap: 8px; width: 100%; padding: 7px 10px;
+  border: 1px solid var(--line); border-left: 3px solid var(--line); border-radius: 4px;
+  background: var(--card); color: var(--ink); font: inherit; text-align: left; cursor: pointer;
+}
+.scope-btn:hover { border-color: var(--ink); }
+/* プロジェクトを開いている間は、綴じ側 (左) を濃くして範囲が絞られていることを示す */
+.scope-switch.in-project .scope-btn { border-left-color: var(--ink); }
+.scope-cap { grid-area: cap; font-size: 10.5px; letter-spacing: .1em; color: var(--ink-soft); }
+.scope-name { grid-area: name; font-size: 13.5px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scope-caret { grid-area: caret; color: var(--ink-soft); font-size: 11px; }
+.scope-switch .popover-panel { left: 0; right: 0; }
+.scope-menu { max-height: 70vh; }
+.scope-opt { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; white-space: normal; }
+.scope-opt.on { background: var(--ink); color: #fff; }
+.scope-opt.on:hover:not(:disabled) { background: var(--ink); }
+.scope-opt-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scope-opt-n { font-size: 11px; color: var(--ink-soft); flex-shrink: 0; }
+.scope-opt.on .scope-opt-n { color: #C9D2E4; }
+.scope-new { margin-top: 4px; border-top: 1px solid var(--line-soft); border-radius: 0 0 3px 3px; color: var(--ink-soft); }
+
+.scope-head { justify-content: space-between; }
+.scope-head h3 { margin: 0 0 8px; }
+.side-row.scope-head .popover { top: 0; transform: none; opacity: 1; }
+
+/* ---------- 上部バー ---------- */
+.topbar-scope {
+  font-size: 13px; font-weight: 700; color: var(--ink-soft); max-width: 28vw;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.topbar-sep { color: var(--line); }
+
+/* ---------- プロジェクトの一覧 ---------- */
+.scope-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 12px; margin-bottom: 10px;
+  border: 1px solid var(--line); border-left: 3px solid var(--ink); border-radius: 4px; background: var(--card);
+}
+.scope-bar-text { flex: 1 1 260px; font-size: 12.5px; color: var(--ink-soft); }
+.scope-bar .aep { position: relative; }
+.etable td.c-cite { white-space: nowrap; }
+.etable td.c-memo { max-width: 220px; }
+.t-memo {
+  display: block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--ink-soft); font-size: 12px;
+}
+
+/* ---------- パレット ---------- */
+.pal-out {
+  flex-shrink: 0; font-size: 10.5px; color: var(--ink-soft);
+  border: 1px dashed var(--line); border-radius: 3px; padding: 0 5px;
+}
+
+/* ---------- 追加ダイアログのプロジェクト選択 ---------- */
+.pp-pick {
+  list-style: none; margin: 4px 0 0; padding: 6px 8px; max-height: 148px; overflow-y: auto;
+  border: 1px solid var(--line); border-radius: 4px; background: var(--card);
+}
+.pp-pick li { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 28px; }
+.pp-pick label { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; min-width: 0; }
+.pp-pick select { font: inherit; font-size: 12px; padding: 2px 4px; }
+.empty-actions { margin: 12px 0 4px; }
+.pp-field { font-size: 11.5px; color: var(--ink-soft); }
+.pp-field-label { display: block; margin-bottom: 3px; }
+.pp-pick label { color: var(--ink); }
+.pp-pick input[type="checkbox"] { width: auto; margin: 0; flex-shrink: 0; }
+.pp-pick label span, .pp-pick label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-pick select {
+  width: auto; flex-shrink: 0; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--card); color: var(--ink);
+}

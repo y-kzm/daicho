@@ -1,12 +1,14 @@
-import { useAppData } from '../state/AppDataContext';
+import { useScope } from '../state/ScopeContext';
 import { Stats } from './Stats';
 
-/** #/stats。見出しは Shell の上部バー (「統計」) が出す。 */
+/** #/stats と #/project/:id/stats。見出しは Shell の上部バーが出す。プロジェクトを開いていればその論文だけを集計する */
 export function StatsView() {
-  const { data } = useAppData();
+  const { entries, scope } = useScope();
   return (
     <section aria-label="統計">
-      <Stats entries={data.entries} />
+      {scope !== null && !entries.length
+        ? <div className="empty">このプロジェクトには、まだ論文がありません</div>
+        : <Stats entries={entries} />}
     </section>
   );
 }

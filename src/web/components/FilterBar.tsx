@@ -6,6 +6,7 @@ import { isFilteringBeyond, sourceQuery, toSavedQuery } from '../lib/smart';
 import { useAppData } from '../state/AppDataContext';
 import { useDialogs } from '../state/DialogContext';
 import { useLibrary } from '../state/LibraryContext';
+import { useScope } from '../state/ScopeContext';
 import { useToast } from '../state/useToast';
 import { MultiPick } from './library/MultiPick';
 
@@ -21,6 +22,7 @@ function toYear(v: string): number | undefined {
 export function FilterBar() {
   const { data, reload } = useAppData();
   const { query, setQuery, source } = useLibrary();
+  const { scope, tags } = useScope();
   const { open } = useDialogs();
   const toast = useToast();
   const set = (patch: Partial<FilterQuery>) => setQuery((q) => ({ ...q, ...patch }));
@@ -42,7 +44,7 @@ export function FilterBar() {
       <input type="search" className="f-search" aria-label="絞り込み" placeholder="絞り込み (タイトル・概要・メモ・DOI・タグ)"
         value={query.search ?? ''} onChange={(ev) => set({ search: ev.target.value || undefined })} />
       <MultiPick<ReadState> label="読了" options={READ_OPTIONS} selected={query.read} onChange={(read) => set({ read })} />
-      <MultiPick<string> label="タグ" options={data.tags.map((t) => ({ value: t, label: t }))} selected={query.tags}
+      <MultiPick<string> label="タグ" options={tags.map((t) => ({ value: t, label: t }))} selected={query.tags}
         onChange={(tags) => set({ tags })}
         footer={(
           <div className="seg f-tagmode" role="group" aria-label="タグの条件">
@@ -50,11 +52,14 @@ export function FilterBar() {
             <button type="button" className={query.tagMode === 'all' ? 'on' : ''} onClick={() => set({ tagMode: 'all' })}>すべて</button>
           </div>
         )} />
-      <select className={query.projectId !== undefined ? 'on' : ''} aria-label="プロジェクト" value={query.projectId ?? ''}
-        onChange={(ev) => set({ projectId: ev.target.value ? Number(ev.target.value) : undefined })}>
-        <option value="">プロジェクト: すべて</option>
-        {projects.map((p) => <option key={p.id} value={p.id}>{p.archived ? `${p.name} (アーカイブ)` : p.name}</option>)}
-      </select>
+      {/* プロジェクトを開いている間は、そのプロジェクトに固定されている */}
+      {scope === null && (
+        <select className={query.projectId !== undefined ? 'on' : ''} aria-label="プロジェクト" value={query.projectId ?? ''}
+          onChange={(ev) => set({ projectId: ev.target.value ? Number(ev.target.value) : undefined })}>
+          <option value="">プロジェクト: すべて</option>
+          {projects.map((p) => <option key={p.id} value={p.id}>{p.archived ? `${p.name} (アーカイブ)` : p.name}</option>)}
+        </select>
+      )}
       <MultiPick<CiteState> label="引用状態" options={CITE_OPTIONS} selected={query.cite} onChange={(cite) => set({ cite })} />
       <span className="f-years">
         年
