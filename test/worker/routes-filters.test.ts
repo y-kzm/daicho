@@ -34,6 +34,9 @@ describe('filter routes', () => {
     expect((await call('PATCH', `/api/filters/${id}`, { name: 'G', query: { unfiled: true } })).json).toEqual({});
     expect((await filters())[0]).toMatchObject({ id, name: 'G', query: { unfiled: true } });
     expect((await call('PATCH', `/api/filters/${id}`, { query: { groupBy: 'author' } })).status).toBe(400);
+    // 引用状態でのグループ化 (プロジェクトを開いているときに使う) も保存できる
+    expect((await call('PATCH', `/api/filters/${id}`, { query: { groupBy: 'cite', cite: ['引用する'] } })).status).toBe(200);
+    expect((await filters())[0]).toMatchObject({ id, query: { groupBy: 'cite', cite: ['引用する'] } });
     const nf = await call<ErrorBody>('PATCH', '/api/filters/999', { name: 'H' });
     expect(nf.status).toBe(404);
     expect(nf.json.error).toContain('フィルタが見つかりません。');

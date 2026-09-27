@@ -79,7 +79,8 @@ export function Shell({ route, children }: Props) {
 
   const listTitle = scope !== null && source.kind === 'builtin' && source.id === 'all' ? '一覧' : sourceLabel(source, data.savedFilters);
   const title = route.name === 'stats' ? '統計' : route.name === 'project' ? 'カンバン' : listTitle;
-  const count = route.name === 'library' ? countFor(entries, apply(query), now) : entries.length;
+  const missingBoard = route.name === 'project' && scope === null;
+  const count = missingBoard ? null : route.name === 'library' ? countFor(entries, apply(query), now) : entries.length;
 
   return (
     <div className="shell">

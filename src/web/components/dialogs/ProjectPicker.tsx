@@ -1,4 +1,4 @@
-import { CITE_STATES, type CiteState, type EntryProjectInput, type Project } from '../../../shared/types';
+import { CITE_STATES, ENTRY_PROJECTS_MAX, type CiteState, type EntryProjectInput, type Project } from '../../../shared/types';
 
 interface Props {
   projects: Project[];
@@ -14,6 +14,7 @@ export function ProjectPicker({ projects, selected, onChange }: Props) {
   const toggle = (id: number) => onChange(
     stateOf(id) === undefined ? [...selected, { projectId: id, state: INITIAL_STATE }] : selected.filter((s) => s.projectId !== id),
   );
+  const full = selected.length >= ENTRY_PROJECTS_MAX;
   const setState = (id: number, state: CiteState) => onChange(selected.map((s) => (s.projectId === id ? { ...s, state } : s)));
   return (
     <div className="pp-field full">
@@ -24,7 +25,9 @@ export function ProjectPicker({ projects, selected, onChange }: Props) {
           return (
             <li key={p.id}>
               <label>
-                <input type="checkbox" checked={state !== undefined} onChange={() => toggle(p.id)} />
+                <input type="checkbox" checked={state !== undefined} disabled={state === undefined && full}
+                  title={state === undefined && full ? `一度に選べるのは ${ENTRY_PROJECTS_MAX} 件までです` : undefined}
+                  onChange={() => toggle(p.id)} />
                 {p.name}
               </label>
               {state !== undefined && (

@@ -5,6 +5,7 @@ import { useAppData } from '../state/AppDataContext';
 import { useDialogs } from '../state/DialogContext';
 import { useLibrary } from '../state/LibraryContext';
 import { useScope } from '../state/ScopeContext';
+import { useToast } from '../state/useToast';
 import { ConfirmDialog } from './ConfirmDialog';
 import { BibtexDialog } from './dialogs/BibtexDialog';
 import { BulkTagDialog } from './dialogs/BulkTagDialog';
@@ -15,8 +16,9 @@ import { SaveFilterDialog } from './dialogs/SaveFilterDialog';
 
 export function AppDialogs() {
   const { data } = useAppData();
-  const { scope } = useScope();
+  const { scope, project } = useScope();
   const route = useRoute();
+  const toast = useToast();
   const { dialog, close, promptText, showPrompt, closePrompt } = useDialogs();
   // await の後で「今のダイアログ」を見るため (レンダー時の dialog はクロージャに固定される)
   const dialogRef = useRef(dialog);
@@ -30,10 +32,16 @@ export function AppDialogs() {
     () => (scope === null ? [] : [{ projectId: scope, state: '気になる' }]),
     [scope],
   );
-  const onEntrySaved = (id: number, isNew: boolean) => {
+  const onEntrySaved = (id: number, isNew: boolean, projectIds: number[]) => {
     close();
+    if (!isNew) return;
+    // 開いているプロジェクトを外して登録した場合、この画面には出てこないので知らせる
+    if (scope !== null && !projectIds.includes(scope)) {
+      toast(`「${project?.name ?? ''}」には入れずに登録しました。「すべての文献」で確認できます。`);
+      return;
+    }
     // カンバンには詳細パネルの開閉状態が別にあるので、一覧のときだけ詳細を開く
-    if (isNew && route.name !== 'project') setDetailId(id);
+    if (route.name !== 'project') setDetailId(id);
   };
   return (
     <>

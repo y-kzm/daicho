@@ -19,7 +19,7 @@ export function App() {
   const missing = wanted !== null && !projectById(wanted);
   // 一覧・統計が削除済みのプロジェクトを指していたら全体へ戻す (カンバンは「見つかりません」を出す)
   useEffect(() => {
-    if (missing && route.name !== 'project') navigate(withScope(route, null));
+    if (missing && route.name !== 'project') navigate(withScope(route, null), { replace: true });
   }, [missing, route]);
   const scope = missing ? null : wanted;
 

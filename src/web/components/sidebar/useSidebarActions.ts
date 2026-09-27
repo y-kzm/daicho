@@ -67,7 +67,7 @@ export function useSidebarActions() {
       confirmDelete('プロジェクトを削除', `「${p.name}」を削除します。所属 (引用状態・メモ) も消えます。論文自体は残ります。`, async () => {
         await api.deleteProject(p.id);
         await reload();
-        if (scopeOf(route) === p.id) navigate({ name: 'library' });
+        if (scopeOf(route) === p.id) navigate({ name: 'library' }, { replace: true });
       }),
   };
 }

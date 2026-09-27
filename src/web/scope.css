@@ -74,3 +74,9 @@
   width: auto; flex-shrink: 0; border: 1px solid var(--line); border-radius: 4px;
   background: var(--card); color: var(--ink);
 }
+
+/* ---------- 保存フィルタの注記 ---------- */
+.cond-note {
+  margin-top: 10px; padding: 8px 10px; font-size: 12px; line-height: 1.6; color: var(--ink-soft);
+  border-left: 3px solid var(--r-skim); background: var(--paper);
+}

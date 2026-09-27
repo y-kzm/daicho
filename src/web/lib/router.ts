@@ -64,7 +64,10 @@ export function useRoute(): Route {
   return useMemo(() => parseHash(hash), [hash]);
 }
 
-export function navigate(r: Route): void {
+/** replace: 履歴を積まずに置き換える (存在しない画面からの自動移動用。戻るボタンで同じ移動を繰り返さない) */
+export function navigate(r: Route, opts: { replace?: boolean } = {}): void {
   const h = toHash(r);
-  if (window.location.hash !== h) window.location.hash = h;
+  if (window.location.hash === h) return;
+  if (opts.replace) window.location.replace(h);
+  else window.location.hash = h;
 }

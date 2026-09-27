@@ -3,6 +3,7 @@ import type { FilterQuery, SavedFilter } from '../../../shared/types';
 import { api } from '../../api';
 import { describeQuery } from '../../lib/smart';
 import { useAppData } from '../../state/AppDataContext';
+import { useScope } from '../../state/ScopeContext';
 import { useToast } from '../../state/useToast';
 import { Modal } from '../Modal';
 
@@ -25,6 +26,7 @@ export function SaveFilterDialog(props: Props) {
 function SaveFilterBody({ query, editing, onClose, onSaved }: Props) {
   const { reload, projectById } = useAppData();
   const toast = useToast();
+  const { scope, project } = useScope();
   const [name, setName] = useState(editing?.name ?? '');
   const [busy, setBusy] = useState(false);
   const conditions = describeQuery(query, (id) => projectById(id)?.name);
@@ -61,6 +63,12 @@ function SaveFilterBody({ query, editing, onClose, onSaved }: Props) {
       <ul className="cond-list">
         {conditions.length ? conditions.map((c) => <li key={c}>{c}</li>) : <li>条件なし (すべての論文)</li>}
       </ul>
+      {scope !== null && (
+        <div className="cond-note" role="note">
+          保存フィルタは全体で共有します。開いているプロジェクト「{project?.name}」は条件に含まれません。
+          プロジェクトを開いている間はそのプロジェクトの中で、「すべての文献」では全体に対して適用されます。
+        </div>
+      )}
       <div className="dialog-actions">
         <button type="button" className="cancel" onClick={onClose}>キャンセル</button>
         <button type="submit" className="submit" disabled={busy}>{editing ? '更新' : '保存'}</button>

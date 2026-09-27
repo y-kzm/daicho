@@ -32,8 +32,8 @@ interface Props {
   /** 新規追加のときに選択済みにするプロジェクト (開いているプロジェクト) */
   initialProjects: EntryProjectInput[];
   onClose: () => void;
-  /** 保存と再読み込みの完了後に呼ぶ */
-  onSaved: (id: number, isNew: boolean) => void;
+  /** 保存と再読み込みの完了後に呼ぶ。projectIds は新規追加で入れたプロジェクト */
+  onSaved: (id: number, isNew: boolean, projectIds: number[]) => void;
   onShowPrompt: (text: string) => void;
 }
 
@@ -150,15 +150,18 @@ function EntryDialogBody({ entry, initialTags, initialProjects, onClose, onSaved
     }
     void run('submit', async () => {
       let id: number;
+      let sent: number[] = [];
       if (entry) {
         await api.updateEntry(entry.id, e);
         id = entry.id;
       } else {
         // 開いている間に削除されたプロジェクトは送らない
-        id = (await api.addEntry(e, projects.filter((s) => data.projects.some((p) => p.id === s.projectId)))).id;
+        const alive = projects.filter((s) => data.projects.some((p) => p.id === s.projectId));
+        id = (await api.addEntry(e, alive)).id;
+        sent = alive.map((s) => s.projectId);
       }
       await reload();
-      onSaved(id, !entry);
+      onSaved(id, !entry, sent);
       toast(entry ? '更新しました' : '追加しました');
     });
   };

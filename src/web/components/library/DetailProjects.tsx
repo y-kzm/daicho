@@ -3,8 +3,8 @@ import type { CiteState, Entry } from '../../../shared/types';
 import { CITE_STATES } from '../../../shared/types';
 import { api } from '../../api';
 import { sortByOrder } from '../../lib/order';
-import { navigate } from '../../lib/router';
 import { useAppData } from '../../state/AppDataContext';
+import { useLibrary } from '../../state/LibraryContext';
 import { useToast } from '../../state/useToast';
 
 interface Props { e: Entry; projectId?: number }
@@ -12,6 +12,7 @@ interface Props { e: Entry; projectId?: number }
 export function DetailProjects({ e, projectId }: Props) {
   const { data, patchEntry, reload } = useAppData();
   const toast = useToast();
+  const { openEntryIn } = useLibrary();
   const [addId, setAddId] = useState<number | ''>('');
   const [addState, setAddState] = useState<CiteState>('気になる');
   const current = projectId === undefined ? undefined : e.cites[String(projectId)];
@@ -55,7 +56,7 @@ export function DetailProjects({ e, projectId }: Props) {
           const info = e.cites[String(p.id)]!;
           return (
             <li key={p.id}>
-              <button type="button" className="linkbtn" title="このプロジェクトを開く" onClick={() => navigate({ name: 'library', scope: p.id })}>{p.name}</button>
+              <button type="button" className="linkbtn" title="このプロジェクトを開く" onClick={() => openEntryIn(p.id, e.id)}>{p.name}</button>
               <select className={'cite c' + info.state} aria-label={`${p.name} での引用状態`} value={info.state}
                 onChange={(ev) => void setState(p.id, ev.target.value)}>
                 {CITE_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
