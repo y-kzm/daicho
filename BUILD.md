@@ -225,6 +225,8 @@ GitHub の Web 画面でファイルを編集してコミットした場合も�
 | 症状 | 原因と対処 |
 |---|---|
 | ビルドが「Worker name が一致しない」で失敗 | Dashboard の Worker 名と `wrangler.toml` の `name` を同じにする |
+| 依存関係のインストールが `npm ci can only install packages when ... are in sync` で失敗 | ビルド環境は npm 10 を使う。`npx npm@10 install --package-lock-only` でロックファイルを作り直して push する |
+| wrangler が Node のバージョンで失敗 | `.nvmrc` が `22` であることを確認する。wrangler 4 は Node 22 以上が必要 |
 | デプロイが `D1_DATABASE_ID がありません` で失敗 | Settings → Builds のビルド用の変数に `D1_DATABASE_ID` を登録する (手順 3) |
 | デプロイが D1 のエラーで失敗 | `D1_DATABASE_ID` の値が Dashboard の Database ID と同じか確認する |
 | 画面は出るが一覧が読み込めない | マイグレーションが未適用。Deploy command が表のとおりか確認し、再デプロイする |

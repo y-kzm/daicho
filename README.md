@@ -124,7 +124,7 @@ flowchart TD
 
 > Web 操作を中心にした構築手順と、GitHub への push で自動デプロイする設定は [BUILD.md](BUILD.md) にあります。以下はターミナル (Wrangler) で行う場合の手順です。
 
-必要なもの: Node.js 20 以上、Cloudflare アカウント (無料プランで可)
+必要なもの: Node.js 22 以上、Cloudflare アカウント (無料プランで可)
 
 1. **依存関係のインストールとログイン**
    ```bash
