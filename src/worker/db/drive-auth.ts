@@ -11,12 +11,15 @@ export async function getDriveAuth(db: D1Database): Promise<DriveAuth | null> {
   return r ? { refreshToken: r.refresh_token, folderId: r.folder_id } : null;
 }
 
-/** 接続し直したときは保存先フォルダも決め直す (別の Google アカウントかもしれない) */
+/**
+ * 接続し直しても保存先フォルダは覚えておく (同じアカウントなら同じフォルダを使い続ける)。
+ * 別のアカウントだった場合、そのフォルダは見えないので、次の保存時に ensureFolder が作り直す。
+ */
 export async function saveDriveAuth(db: D1Database, refreshToken: string, now: string): Promise<void> {
   await db
     .prepare(
       'INSERT INTO drive_auth (id, refresh_token, folder_id, connected_at) VALUES (1, ?, \'\', ?) ' +
-        'ON CONFLICT(id) DO UPDATE SET refresh_token = excluded.refresh_token, folder_id = \'\', connected_at = excluded.connected_at',
+        'ON CONFLICT(id) DO UPDATE SET refresh_token = excluded.refresh_token, connected_at = excluded.connected_at',
     )
     .bind(refreshToken, now)
     .run();

@@ -41,6 +41,22 @@ describe('attachmentName', () => {
   });
 });
 
+describe('attachmentName with hostile metadata', () => {
+  it('drops invisible and direction-changing characters', () => {
+    const title = 'Safe\u202Efdp.exe\u202C \u200Btitle\u200D\uFEFF\u00AD\u2066x\u2069';
+    const name = attachmentName({ bibkey: 'k\u200F', title }, '本文');
+    expect(name).toBe('k - Safefdp.exe titlex.pdf');
+    expect(name).not.toMatch(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff\u0080-\u009f]/);
+  });
+  it('replaces C1 control characters', () => {
+    expect(attachmentName({ bibkey: 'k', title: 'a\u0085b\u009fc' }, '本文')).toBe('k - a b c.pdf');
+  });
+  it('caps a long BibTeX key', () => {
+    const name = attachmentName({ bibkey: 'x'.repeat(300), title: 'T' }, '本文');
+    expect(name).toBe('x'.repeat(60) + ' - T.pdf');
+  });
+});
+
 describe('cleanPart / truncateTitle', () => {
   it('trims dots and spaces at both ends', () => {
     expect(cleanPart('  ..hidden. ')).toBe('hidden');

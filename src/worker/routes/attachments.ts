@@ -5,7 +5,7 @@ import { assertRoom, deleteAttachment, getAttachment, insertAttachment } from '.
 import { getEntry } from '../db/entries';
 import type { Env } from '../env';
 import { AppError, notFound } from '../errors';
-import { getFile, PDF_MIME, startUpload, trashFile } from '../services/drive';
+import { getFile, PDF_MIME, startUpload, trashFile, viewUrl } from '../services/drive';
 import { openDrive } from '../services/drive-session';
 import { attachmentName } from '../services/filename';
 import { parseIdParam, positiveInt, str } from '../validate';
@@ -56,7 +56,6 @@ attachments.post('/', async (c) => {
   const kind = parseKind(body.kind);
   const fileId = str(body.fileId);
   if (!FILE_ID.test(fileId)) throw new AppError('ファイルの指定が不正です。');
-  await assertRoom(c.env.DB, entry.id);
   const { token, folderId } = await openDrive(c.env);
   const file = await getFile(token, fileId);
   if (!file || file.trashed || !file.parents.includes(folderId)) throw new AppError('アップロードしたファイルが見つかりません。', 404);
@@ -64,8 +63,16 @@ attachments.post('/', async (c) => {
     await trashFile(token, fileId).catch(() => false);
     throw new AppError(file.mimeType !== PDF_MIME ? 'PDF ファイルを選んでください。' : SIZE_MESSAGE);
   }
-  const url = file.webViewLink || `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/view`;
-  await insertAttachment(c.env.DB, { entryId: entry.id, kind, fileId, name: file.name, url, size: file.size }, new Date().toISOString());
+  try {
+    await assertRoom(c.env.DB, entry.id);
+    await insertAttachment(
+      c.env.DB, { entryId: entry.id, kind, fileId, name: file.name, url: viewUrl(file), size: file.size }, new Date().toISOString(),
+    );
+  } catch (err) {
+    // 付けられなかったファイルを Drive に残さない。登録済み (409) のファイルは使用中なので触らない
+    if (!(err instanceof AppError && err.status === 409)) await trashFile(token, fileId).catch(() => false);
+    throw err;
+  }
   return c.json(await getAppData(c.env.DB));
 });
 

@@ -14,6 +14,12 @@ export const BIBTEX_LIMIT_MESSAGE = 'BibTeX は 1 回 45 件までです。選�
 /** 一括操作の上限 (契約 §1 BULK_MAX と同じ値) の文言。サーバーの 400 と同じ */
 export const BULK_LIMIT_MESSAGE = '一度に扱えるのは 200 件までです。';
 
+/** 論文を削除したあとの通知。Drive に残った PDF があれば、それも伝える */
+export function deletedMessage(driveLeft: number | undefined): [string, boolean] {
+  if (!driveLeft) return ['削除しました', false];
+  return [`削除しました。PDF ${driveLeft} 件は Google Drive のゴミ箱へ移せなかったので、Drive の「Daicho」フォルダに残っています。`, true];
+}
+
 /**
  * Cloudflare Access のセッションが切れると、同一オリジンへの fetch が Access ドメインへの
  * 302 になる。`redirect: 'manual'` で追わせた場合、その応答は opaqueredirect (status 0) として
@@ -75,7 +81,8 @@ export const api = {
   addEntry: (input: EntryInput, projects: EntryProjectInput[] = []) =>
     call<{ id: number }>('POST', '/entries', projects.length ? { ...input, projects } : input),
   updateEntry: (id: number, input: EntryInput) => send('PUT', `/entries/${id}`, input),
-  deleteEntry: (id: number) => send('DELETE', `/entries/${id}`),
+  /** driveLeft: Google Drive のゴミ箱へ移せずに残った PDF の件数 */
+  deleteEntry: (id: number) => call<{ driveLeft?: number }>('DELETE', `/entries/${id}`),
   setRead: (id: number, state: ReadState) => send('PATCH', `/entries/${id}/read`, { state }),
   setCite: (id: number, projectId: number, state: string) => send('PATCH', `/entries/${id}/cite`, { projectId, state }),
   setFlags: (id: number, flags: { starred?: boolean; priority?: Priority }) => send('PATCH', `/entries/${id}/flags`, flags),

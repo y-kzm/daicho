@@ -8,6 +8,7 @@ import { call } from './request';
 
 const app = createApp();
 const ORIGIN = 'https://daicho.example.test';
+const SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
 async function get(path: string, headers: Record<string, string> = {}, e: unknown = env) {
   return app.request(ORIGIN + path, { method: 'GET', headers }, e as typeof env);
@@ -65,7 +66,7 @@ describe('GET /api/drive/connect', () => {
 describe('GET /api/drive/callback', () => {
   it('stores the refresh token and never puts it in the redirect', async () => {
     const { cookie, state } = await startConnect();
-    const calls = mockFetchDetailed([{ match: 'oauth2.googleapis.com/token', body: { refresh_token: 'rt-secret', access_token: 'at' } }]);
+    const calls = mockFetchDetailed([{ match: 'oauth2.googleapis.com/token', body: { refresh_token: 'rt-secret', access_token: 'at', scope: SCOPE } }]);
     const res = await get(`/api/drive/callback?code=abc&state=${state}`, { cookie });
     expect(res.status).toBe(302);
     expect(res.headers.get('location')).toBe(ORIGIN + '/?drive=connected');
@@ -97,19 +98,39 @@ describe('GET /api/drive/callback', () => {
     const denied = await get(`/api/drive/callback?error=access_denied&state=${c.state}`, { cookie: c.cookie });
     expect(denied.headers.get('location')).toBe(ORIGIN + '/?drive=denied');
     c = await startConnect();
-    mockFetchDetailed([{ match: 'oauth2.googleapis.com/token', body: { access_token: 'at' } }]);
+    mockFetchDetailed([{ match: 'oauth2.googleapis.com/token', body: { access_token: 'at', scope: SCOPE } }]);
     const res = await get(`/api/drive/callback?code=abc&state=${c.state}`, { cookie: c.cookie });
     expect(res.headers.get('location')).toBe(ORIGIN + '/?drive=error');
     expect(await getDriveAuth(env.DB)).toBeNull();
   });
 
-  it('forgets the folder when connecting again', async () => {
+  it('keeps the folder when connecting again, so the same account keeps one folder', async () => {
     await saveDriveAuth(env.DB, 'old', '2026-01-01T00:00:00.000Z');
     await env.DB.prepare("UPDATE drive_auth SET folder_id = 'old-folder'").run();
     const { cookie, state } = await startConnect();
-    mockFetchDetailed([{ match: 'oauth2.googleapis.com/token', body: { refresh_token: 'new' } }]);
+    mockFetchDetailed([{ match: 'oauth2.googleapis.com/token', body: { refresh_token: 'new', scope: SCOPE } }]);
     await get(`/api/drive/callback?code=abc&state=${state}`, { cookie });
-    expect(await getDriveAuth(env.DB)).toEqual({ refreshToken: 'new', folderId: '' });
+    expect(await getDriveAuth(env.DB)).toEqual({ refreshToken: 'new', folderId: 'old-folder' });
+  });
+
+  it('does not connect, and revokes the token, when the Drive permission was not granted', async () => {
+    const { cookie, state } = await startConnect();
+    const calls = mockFetchDetailed([
+      { match: 'oauth2.googleapis.com/token', body: { refresh_token: 'rt-partial', scope: 'openid email' } },
+      { match: 'oauth2.googleapis.com/revoke', body: {} },
+    ]);
+    const res = await get(`/api/drive/callback?code=abc&state=${state}`, { cookie });
+    expect(res.headers.get('location')).toBe(ORIGIN + '/?drive=error');
+    expect(await getDriveAuth(env.DB)).toBeNull();
+    expect(new URLSearchParams(calls.find((c) => c.url.includes('/revoke'))!.body).get('token')).toBe('rt-partial');
+  });
+
+  it('treats a refusal with a valid state as a refusal', async () => {
+    const { cookie, state } = await startConnect();
+    const calls = mockFetchDetailed([{ match: /.*/, body: {} }]);
+    const res = await get(`/api/drive/callback?error=access_denied&state=${state}`, { cookie });
+    expect(res.headers.get('location')).toBe(ORIGIN + '/?drive=denied');
+    expect(calls).toHaveLength(0);
   });
 });
 

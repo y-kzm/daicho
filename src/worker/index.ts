@@ -14,6 +14,7 @@ import maintenance from './routes/maintenance';
 import metadata from './routes/metadata';
 import projects from './routes/projects';
 import tags from './routes/tags';
+import { sameOriginOnly } from './same-origin';
 
 export type App = Hono<{ Bindings: Env }>;
 
@@ -21,6 +22,7 @@ export function createApp(): App {
   const app: App = new Hono();
   const api: App = new Hono();
 
+  api.use('*', sameOriginOnly);
   api.get('/health', (c) => c.json({ ok: true }));
   api.route('/data', data);
   api.route('/entries', entries);

@@ -43,3 +43,27 @@ describe('formatBytes', () => {
     expect(formatBytes(25 * 1024 * 1024)).toBe('25 MB');
   });
 });
+
+describe('uploadPdf', () => {
+  it('does not send anything when it was cancelled before it started', async () => {
+    const { uploadPdf } = await import('../../src/web/lib/upload');
+    let created = 0;
+    (globalThis as { XMLHttpRequest?: unknown }).XMLHttpRequest = class { constructor() { created++; } };
+    const ctl = new AbortController();
+    ctl.abort();
+    await expect(uploadPdf('https://upload.invalid/x', new Blob(['%PDF-']), () => {}, ctl.signal)).rejects.toThrow('中止');
+    expect(created).toBe(0);
+    delete (globalThis as { XMLHttpRequest?: unknown }).XMLHttpRequest;
+  });
+});
+
+describe('deletedMessage', () => {
+  it('mentions files left in Drive only when there are some', async () => {
+    const { deletedMessage } = await import('../../src/web/api');
+    expect(deletedMessage(undefined)).toEqual(['削除しました', false]);
+    expect(deletedMessage(0)).toEqual(['削除しました', false]);
+    const [msg, isError] = deletedMessage(3);
+    expect(msg).toContain('PDF 3 件');
+    expect(isError).toBe(true);
+  });
+});

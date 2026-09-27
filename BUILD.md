@@ -190,7 +190,7 @@ npx wrangler d1 execute daicho --remote --config wrangler.deploy.toml --file=tem
 
 ### 7-3. やり直す場合
 
-Console で次を実行してから、もう一度流します。
+Console で次を実行してから、もう一度流します。PDF を付けている場合、論文との対応は消えますが、Google Drive のファイルは残ります。
 
 ```sql
 DELETE FROM cites; DELETE FROM entry_tags; DELETE FROM entries;
@@ -220,7 +220,7 @@ DELETE FROM tags;  DELETE FROM projects;   DELETE FROM saved_filters;
 ### 8-2. 同意画面を設定する
 
 1. **API とサービス** → **OAuth 同意画面** (Google Auth Platform) を開く
-2. アプリ名 (`Daicho` など) とサポート用のメールアドレスを入力する
+2. アプリ名 (`Daicho` など) とサポート用のメールアドレスを入力する。ロゴは設定しない (設定すると、公開時に Google の確認を求められることがあります)
 3. 対象は **外部** を選ぶ
 4. **データアクセス** (スコープ) で、次のスコープを追加する
 
@@ -244,7 +244,7 @@ https://daicho.<サブドメイン>.workers.dev/api/drive/callback
 
 4. 作成後に表示される **クライアント ID** と **クライアント シークレット** を控える
 
-「承認済みの JavaScript 生成元」は空のままで構いません。
+「承認済みの JavaScript 生成元」は空のままで構いません。独自ドメインでも使う場合は、そのドメインのリダイレクト URI も追加します。
 
 ### 8-4. Cloudflare に登録する
 
@@ -272,9 +272,11 @@ https://daicho.<サブドメイン>.workers.dev/api/drive/callback
 
 - PDF は 1 ファイル 100 MB まで、1 つの論文に 10 件までです。
 - PDF を削除すると、Drive のゴミ箱へ移します。30 日以内なら Drive から戻せます。
-- 論文を削除すると、付けていた PDF も Drive のゴミ箱へ移します。一括削除では 1 回 40 件までで、それを超えた分は Drive に残ります。
+- 論文を削除すると、付けていた PDF も Drive のゴミ箱へ移します。Drive に接続できずに移せなかった場合は、残った件数を画面に表示します。
+- 一括削除は、付いている PDF が合計 40 件までのときに実行できます。超える場合は、選択を分けてください。
 - 接続を外すには、サイドバーの **設定とリンク** → **Google Drive** → **接続を外す** を押します。Drive のファイルと、論文に付けた URL は残ります。
-- 別の Google アカウントに接続し直すと、新しいアカウントの Drive に「Daicho」フォルダを作ります。以前の PDF は元のアカウントに残り、Daicho からは削除できなくなります。
+- 同じ Google アカウントに接続し直した場合は、同じ「Daicho」フォルダを使い続けます。
+- 別の Google アカウントに接続し直すと、新しいアカウントの Drive に「Daicho」フォルダを作ります。以前の PDF は元のアカウントの Drive に残ります。Daicho で削除すると論文からは外れますが、元のアカウントのファイルは消えません。
 - CSV のエクスポートには PDF の URL を含めません (従来の 17 列のままです)。JSON のエクスポートには含めます。
 
 ---
@@ -302,7 +304,7 @@ GitHub の Web 画面でファイルを編集してコミットした場合も�
 | 同上 | 出版国の再判定は 1 回 15 件ずつ |
 | D1 の呼び出し回数 | 一括操作は 1 回 200 件まで |
 | Zero Trust Free | 50 ユーザーまで、ログ保持 24 時間 |
-| 外部リクエスト 50 件/リクエスト | 論文の一括削除で Drive のゴミ箱へ移すのは 1 回 40 件まで |
+| 外部リクエスト 50 件/リクエスト | 一括削除は、付いている PDF が合計 40 件まで |
 
 ## うまくいかないとき
 
@@ -329,6 +331,7 @@ GitHub の Web 画面でファイルを編集してコミットした場合も�
 - [ ] `wrangler.toml` の `database_id` がプレースホルダのままで、`.env` と `wrangler.deploy.toml` をコミットしていない
 - [ ] CSV と `import.sql` をコミットしていない (`temp/` とルート直下の `*.csv` は gitignore 済み)
 - [ ] GitHub App の権限は、このリポジトリだけに限定している
+- [ ] Google の同意画面で追加したスコープは `drive.file` だけである
 - [ ] リポジトリを Public にする場合、`wrangler.toml` の `CONTACT_MAILTO` に公開したくないアドレスを書いていない
 
 ## ローカルで開発する場合 (参考)

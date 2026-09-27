@@ -138,6 +138,8 @@ export interface AppData {
   readStates: readonly string[];
   citeStates: readonly string[];
   links: { jcr: string; core: string };
+  /** 論文の削除後に、Google Drive のゴミ箱へ移せずに残った PDF の件数 (削除の応答にだけ付く) */
+  driveLeft?: number;
 }
 
 export interface DoiMetadata {

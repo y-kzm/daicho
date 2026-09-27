@@ -167,10 +167,27 @@ describe('POST /api/attachments', () => {
     }
   });
 
-  it('refuses the same file twice', async () => {
-    mockFetchDetailed([token, folderOk, fileMeta()]);
+  it('refuses the same file twice, and leaves the registered file alone', async () => {
+    const calls = mockFetchDetailed([token, folderOk, fileMeta(), trashOk]);
     expect((await register({ entryId, fileId: FILE, kind: '本文' })).status).toBe(200);
     expect((await register({ entryId, fileId: FILE, kind: '本文' })).status).toBe(409);
+    expect(calls.some((c) => c.method === 'PATCH')).toBe(false);
+  });
+
+  it('trashes an uploaded file that cannot be attached because the entry is full', async () => {
+    for (let i = 0; i < 10; i++) await seedAttachment(`f${i}.pdf`, `file-000000000${i}`);
+    const calls = mockFetchDetailed([token, folderOk, fileMeta(), trashOk]);
+    expect((await register({ entryId, fileId: FILE, kind: '本文' })).status).toBe(400);
+    expect(calls.find((c) => c.method === 'PATCH')!.url).toContain(FILE);
+  });
+
+  it('stores only a Google Drive https URL', async () => {
+    for (const link of ['javascript:alert(1)', 'http://drive.google.com/x', 'https://evil.example/drive.google.com/', '']) {
+      await env.DB.prepare('DELETE FROM attachments').run();
+      mockFetchDetailed([token, folderOk, fileMeta({ webViewLink: link })]);
+      const r = await register({ entryId, fileId: FILE, kind: '本文' });
+      expect(entryOf(r.json).attachments[0]!.url, link).toBe(`https://drive.google.com/file/d/${FILE}/view`);
+    }
   });
 
   it('rejects malformed file ids without calling Google', async () => {
@@ -233,6 +250,41 @@ describe('attachments follow their entry', () => {
     const calls = mockFetchDetailed([token, trashOk]);
     expect((await call('DELETE', `/api/entries/${other}`)).status).toBe(200);
     expect(calls).toHaveLength(0);
+  });
+
+  it('reports the files that stayed in Drive', async () => {
+    await seedAttachment('a.pdf', 'file-aaaaaaaaaaaa');
+    await seedAttachment('b.pdf', 'file-bbbbbbbbbbbb');
+    mockFetchDetailed([token, { match: 'file-aaaaaaaaaaaa', method: 'PATCH', body: {} }, { match: 'file-bbbbbbbbbbbb', method: 'PATCH', status: 500, body: {} }]);
+    const r = await call<{ driveLeft?: number }>('DELETE', `/api/entries/${entryId}`);
+    expect(r.json).toEqual({ driveLeft: 1 });
+    const other = await seedEntry(env.DB, { title: 'Other' });
+    await seedAttachment('c.pdf', 'file-cccccccccccc', other);
+    mockFetchDetailed([token, trashOk]);
+    expect((await call('DELETE', `/api/entries/${other}`)).json).toEqual({});
+  });
+
+  it('refuses a bulk delete with more files than one request can clean up', async () => {
+    const ids: number[] = [];
+    for (let e = 0; e < 5; e++) {
+      const id = await seedEntry(env.DB, { title: 'Bulk ' + e });
+      ids.push(id);
+      for (let i = 0; i < 9; i++) await seedAttachment(`b${e}-${i}.pdf`, `file-bulk-${e}-${i}-000`, id);
+    }
+    let calls = mockFetchDetailed([token, trashOk]);
+    const over = await call<ErrorBody>('POST', '/api/entries/bulk', { ids, op: { type: 'delete' } });
+    expect(over.status).toBe(400);
+    expect(over.json.error).toContain('PDF が 45 件');
+    expect(calls).toHaveLength(0);
+    expect((await env.DB.prepare('SELECT COUNT(*) AS n FROM attachments').first<{ n: number }>())!.n).toBe(45);
+    // 40 件ちょうどは通り、外部への要求は 41 回 (トークン 1 + ゴミ箱 40) に収まる
+    calls = mockFetchDetailed([token, trashOk]);
+    await env.DB.prepare("DELETE FROM attachments WHERE file_id LIKE 'file-bulk-4-%' AND file_id >= 'file-bulk-4-4'").run();
+    expect((await env.DB.prepare('SELECT COUNT(*) AS n FROM attachments').first<{ n: number }>())!.n).toBe(40);
+    const ok = await call<AppData>('POST', '/api/entries/bulk', { ids, op: { type: 'delete' } });
+    expect(ok.status).toBe(200);
+    expect(ok.json.driveLeft).toBeUndefined();
+    expect(calls).toHaveLength(41);
   });
 
   it('trashes the files on bulk delete, but not on other bulk operations', async () => {

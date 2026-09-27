@@ -20,6 +20,8 @@ export function DetailFiles({ e }: { e: Entry }) {
   const [over, setOver] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const abort = useRef<AbortController | null>(null);
+  /** 送信中の印。state は次の描画まで変わらないので、続けて 2 回選ばれた場合に備えて ref でも持つ */
+  const running = useRef(false);
   // 送信中にパネルを閉じたら中止する (送り終えても付け先の画面が無い)
   useEffect(() => () => abort.current?.abort(), []);
 
@@ -28,15 +30,18 @@ export function DetailFiles({ e }: { e: Entry }) {
   const busy = progress !== null;
 
   const upload = async (file: File) => {
-    if (busy || !ready || full) return;
-    const head = new Uint8Array(await file.slice(0, 8).arrayBuffer());
-    const problem = checkPdf(file, head);
-    if (problem) { toast(problem, true); return; }
+    if (running.current || busy || !ready || full) return;
+    running.current = true;
     const ctl = new AbortController();
     abort.current = ctl;
-    setProgress({ name: file.name, ratio: 0 });
     try {
+      const head = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+      const problem = checkPdf(file, head);
+      if (problem) { toast(problem, true); return; }
+      setProgress({ name: file.name, ratio: 0 });
       const session = await api.startUpload(e.id, kind, { size: file.size, type: PDF_MIME });
+      // 送信先を作っている間に中止された場合は、送らない
+      if (ctl.signal.aborted) return;
       setProgress({ name: session.name, ratio: 0 });
       const fileId = await uploadPdf(session.uploadUrl, file, (ratio) => setProgress({ name: session.name, ratio }), ctl.signal);
       applyData(await api.addAttachment(e.id, kind, fileId));
@@ -46,6 +51,7 @@ export function DetailFiles({ e }: { e: Entry }) {
       if (!ctl.signal.aborted) toast((err as Error).message, true);
       void refresh(); // 接続が切れていた場合に、案内を出し直す
     } finally {
+      running.current = false;
       abort.current = null;
       setProgress(null);
       if (input.current) input.current.value = '';

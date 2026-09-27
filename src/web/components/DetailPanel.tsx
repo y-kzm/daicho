@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Entry, EntryInput, Priority, ReadState } from '../../shared/types';
 import { PRIORITIES, PRIORITY_LABELS, READ_STATES } from '../../shared/types';
-import { api } from '../api';
+import { api, deletedMessage } from '../api';
 import { venueOf } from '../lib/table';
 import { useAppData } from '../state/AppDataContext';
 import { useDialogs } from '../state/DialogContext';
@@ -86,7 +86,7 @@ function DetailBody({ e, projectId, onClose, onEdit }: { e: Entry; projectId?: n
   const saveNote = () => { if (note !== e.note) void save({ note }, 'メモを保存しました'); };
   const remove = () => open({
     kind: 'confirm', title: '論文を削除', body: `「${e.title}」を削除します。元に戻せません。`, confirmLabel: '削除する',
-    onConfirm: async () => { await api.deleteEntry(e.id); await reload(); onClose(); toast('削除しました'); },
+    onConfirm: async () => { const r = await api.deleteEntry(e.id); await reload(); onClose(); toast(...deletedMessage(r.driveLeft)); },
   });
 
   return (

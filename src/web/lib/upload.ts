@@ -38,6 +38,8 @@ export function uploadPdf(
   uploadUrl: string, file: Blob, onProgress: (ratio: number) => void, signal?: AbortSignal,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
+    // 中止済みの signal は abort を通知しないので、送り始める前に確かめる
+    if (signal?.aborted) { reject(new UploadError('アップロードを中止しました。')); return; }
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', uploadUrl);
     xhr.setRequestHeader('content-type', PDF_MIME);

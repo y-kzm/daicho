@@ -9,7 +9,7 @@ import { todayJst } from '../date';
 import type { Env } from '../env';
 import { AppError } from '../errors';
 import { generateBibkey } from '../services/bibtex';
-import { trashBestEffort } from '../services/drive-session';
+import { TRASH_MAX, trashBestEffort } from '../services/drive-session';
 import {
   idList, optBool, optPriority, parseBulkOp, parseEntryInput, parseEntryProjects, parseIdParam, positiveInt, str,
 } from '../validate';
@@ -25,9 +25,13 @@ entries.post('/bulk', async (c) => {
   const op = parseBulkOp(body.op);
   // 論文を消すと添付の行も消えるので、Drive 側を片付けるための id を先に控える
   const files = op.type === 'delete' ? await fileIdsForEntries(c.env.DB, ids) : [];
+  // 1 回で片付けられる数を超える場合は、消す前に断る (Drive に残った PDF を後から探せなくなるため)
+  if (files.length > TRASH_MAX) {
+    throw new AppError(`選択した論文には PDF が ${files.length} 件付いています。一度に削除できるのは PDF ${TRASH_MAX} 件分までです。選択を分けてください。`);
+  }
   await bulkApply(c.env.DB, ids, op);
-  await trashBestEffort(c.env, files);
-  return c.json(await getAppData(c.env.DB));
+  const driveLeft = await trashBestEffort(c.env, files);
+  return c.json({ ...(await getAppData(c.env.DB)), ...(driveLeft > 0 ? { driveLeft } : {}) });
 });
 
 entries.post('/merge', async (c) => {
@@ -60,8 +64,8 @@ entries.delete('/:id', async (c) => {
   const id = parseIdParam(c.req.param('id'));
   const files = await fileIdsForEntries(c.env.DB, [id]);
   await deleteEntry(c.env.DB, id);
-  await trashBestEffort(c.env, files);
-  return c.json({});
+  const driveLeft = await trashBestEffort(c.env, files);
+  return c.json(driveLeft > 0 ? { driveLeft } : {});
 });
 
 entries.patch('/:id/read', async (c) => {

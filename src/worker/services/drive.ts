@@ -59,7 +59,12 @@ export async function exchangeCode(client: OAuthClient, code: string, redirectUr
   }));
   const body = await readJson(res);
   const token = typeof body.refresh_token === 'string' ? body.refresh_token : '';
-  if (!res.ok || !token) throw new AppError('Google Drive に接続できませんでした。もう一度やり直してください。', 502);
+  // 同意画面で Drive の許可を外した場合は、接続済みにしない (保存のたびに失敗するため)
+  const granted = typeof body.scope === 'string' ? body.scope.split(/\s+/) : [];
+  if (!res.ok || !token || !granted.includes(DRIVE_SCOPE)) {
+    if (token) await revoke(token);
+    throw new AppError('Google Drive に接続できませんでした。もう一度やり直してください。', 502);
+  }
   return token;
 }
 
@@ -148,6 +153,13 @@ export async function startUpload(
   if (res.status === 401) throw new AppError(RECONNECT_MESSAGE, 409);
   if (!res.ok || !url.startsWith('https://')) throw new AppError(DRIVE_ERROR, 502);
   return url;
+}
+
+const VIEW_URL = /^https:\/\/(drive|docs)\.google\.com\//;
+
+/** 画面にリンクとして出す URL。Drive が返した値が想定外なら、id から組み立てる */
+export function viewUrl(file: { id: string; webViewLink: string }): string {
+  return VIEW_URL.test(file.webViewLink) ? file.webViewLink : `https://drive.google.com/file/d/${encodeURIComponent(file.id)}/view`;
 }
 
 /** ゴミ箱へ移す (完全には消さない)。既に無いファイルは成功として扱う */

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { BulkOp } from '../../shared/types';
 import { BULK_MAX, CITE_STATES, PRIORITIES, PRIORITY_LABELS, READ_STATES } from '../../shared/types';
-import { api, BIBTEX_LIMIT, BIBTEX_LIMIT_MESSAGE, BULK_LIMIT_MESSAGE } from '../api';
+import { api, BIBTEX_LIMIT, BIBTEX_LIMIT_MESSAGE, BULK_LIMIT_MESSAGE, deletedMessage } from '../api';
 import { sortByOrder } from '../lib/order';
 import { useAppData } from '../state/AppDataContext';
 import { useDialogs } from '../state/DialogContext';
@@ -67,7 +67,12 @@ export function BulkBar() {
     if (tooMany) { toast(BULK_LIMIT_MESSAGE, true); return; }
     open({
       kind: 'confirm', title: '論文を削除', body: `${ids.length} 件の論文を削除します。元に戻せません。`, confirmLabel: '削除する',
-      onConfirm: async () => { applyData(await api.bulk(ids, { type: 'delete' })); clear(); toast('削除しました'); },
+      onConfirm: async () => {
+        const d = await api.bulk(ids, { type: 'delete' });
+        applyData(d);
+        clear();
+        toast(...deletedMessage(d.driveLeft));
+      },
     });
   };
 

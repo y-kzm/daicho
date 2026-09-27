@@ -9,6 +9,8 @@ export function httpFor(env: Env): Http {
 
 /** JSON 本文をオブジェクトとして読む。JSON でない・オブジェクトでない場合は 400。 */
 export async function jsonBody(c: Context): Promise<Record<string, unknown>> {
+  // フォームの送信 (text/plain など) で JSON を届けさせない
+  if (!/^application\/json\b/i.test(c.req.header('content-type') ?? '')) throw new AppError('リクエスト本文が不正です。');
   let body: unknown;
   try {
     body = await c.req.json();
