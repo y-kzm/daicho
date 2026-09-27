@@ -389,9 +389,11 @@
     padding: 14px 12px 40px;
   }
   .side-brand {
+    display: flex; align-items: center; gap: 8px;
     font-size: 14px; font-weight: 700; letter-spacing: .08em; padding: 0 10px 10px;
     border-bottom: 3px double var(--line); margin-bottom: 14px;
   }
+  .side-brand img { display: block; flex-shrink: 0; border-radius: 5px; }
   .side-h { display: flex; justify-content: space-between; align-items: center; }
   .side-add {
     border: none; background: none; color: var(--ink-soft); cursor: pointer;

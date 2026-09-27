@@ -1,7 +1,13 @@
 {
   "name": "daicho",
+  "version": "1.0.0",
+  "description": "自分専用の文献管理 Web アプリ (Cloudflare Workers + D1 + React)",
+  "license": "MIT",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "wrangler dev",
     "dev:web": "vite",

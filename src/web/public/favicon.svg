@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Daicho">
+  <rect width="64" height="64" rx="14" fill="#1F2C46"/>
+  <!-- 帳面 -->
+  <rect x="13" y="10.5" width="38" height="43" rx="2.5" fill="#F7F6F1"/>
+  <!-- 綴じ代 -->
+  <path d="M44.5 10.5h4a2.5 2.5 0 0 1 2.5 2.5v38a2.5 2.5 0 0 1-2.5 2.5h-4z" fill="#E8E5DC"/>
+  <!-- 四つ目綴じの糸 -->
+  <g stroke="#1F2C46" stroke-width="1.5" stroke-linecap="butt" fill="none">
+    <path d="M44.5 10.5v43"/>
+    <path d="M44.5 17h6.5M44.5 27h6.5M44.5 37h6.5M44.5 47h6.5"/>
+  </g>
+  <!-- 行 = 論文 (未読 / 斜め読み / 精読済) -->
+  <g stroke-width="3.6" stroke-linecap="round" fill="none">
+    <path d="M19.5 22h18" stroke="#B0AA9A"/>
+    <path d="M19.5 32h12" stroke="#C08A1E"/>
+    <path d="M19.5 42h18" stroke="#2E6B4F"/>
+  </g>
+</svg>

@@ -50,7 +50,7 @@ export function Sidebar({ route }: { route: Route }) {
 
   return (
     <aside id="sidebar">
-      <div className="side-brand">研究文献台帳</div>
+      <div className="side-brand"><img src="/favicon.svg" alt="" width="22" height="22" />研究文献台帳</div>
 
       <h3>コレクション</h3>
       {BUILTINS.map((b) => (

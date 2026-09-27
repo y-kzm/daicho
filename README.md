@@ -1,6 +1,38 @@
-# Daicho (台帳)
+<p align="center">
+  <img src="src/web/public/favicon.svg" width="96" height="96" alt="Daicho のアイコン: 和綴じの帳面">
+</p>
 
-**Cloudflare Workers + D1 で動く、自分専用の文献管理 Web アプリ**
+<h1 align="center">Daicho 台帳</h1>
+
+<p align="center">
+  Cloudflare Workers と D1 で動く、自分専用の文献管理 Web アプリ
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-1F2C46"></a>
+  <img alt="Cloudflare Workers" src="https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white">
+  <img alt="Cloudflare D1" src="https://img.shields.io/badge/database-D1-F38020?logo=cloudflare&logoColor=white">
+  <img alt="Hono 4" src="https://img.shields.io/badge/Hono-4-E36002?logo=hono&logoColor=white">
+  <img alt="React 18" src="https://img.shields.io/badge/React-18-149ECA?logo=react&logoColor=white">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white">
+</p>
+
+<p align="center">
+  <a href="BUILD.md">構築手順</a> |
+  <a href="#特徴">特徴</a> |
+  <a href="#セットアップ">セットアップ</a> |
+  <a href="#制限事項">制限事項</a>
+</p>
+
+<p align="center">
+  <img src="assets/screenshot-library.png" width="860" alt="ライブラリ画面: テーブル表示、フィルタ、サイドバーのコレクションとプロジェクト">
+</p>
+
+<p align="center">
+  <img src="assets/screenshot-project.png" width="860" alt="プロジェクト画面: 引用状態ごとのカンバンとプロジェクトメモ">
+</p>
+
+<p align="center"><sub>画面は公開論文を使ったデモデータです。</sub></p>
 
 研究論文のサーベイを、Cloudflare の無料枠だけで動く Web アプリとして管理します。データは Cloudflare D1 (SQLite) に保存され、いつでも CSV / JSON でエクスポートできるので、アプリを捨ててもデータは表として残ります。Cloudflare Access で自分のアカウントだけにアクセスを絞れます。
 

@@ -1,0 +1,17 @@
+{
+  "name": "研究文献台帳 Daicho",
+  "short_name": "Daicho",
+  "description": "自分専用の文献管理。論文の読了状態、タグ、プロジェクトごとの引用状態を 1 つの台帳で管理します。",
+  "lang": "ja",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F7F6F1",
+  "theme_color": "#1F2C46",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
