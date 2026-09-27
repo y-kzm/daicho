@@ -11,7 +11,7 @@ function entry(over: Partial<Entry>): Entry {
   return {
     id: 1, added: '2026-01-01', tags: [], title: 'A Study with IPv6', summary: '', url: '', doi: '', year: '2024',
     country: '', publisher: '', journal: '', impactFactor: '', conference: '', core: '', bibkey: '', read: '未読',
-    note: '', starred: false, priority: 0, lastOpenedAt: '', cites: {}, ...over,
+    note: '', starred: false, priority: 0, lastOpenedAt: '', cites: {}, attachments: [], ...over,
   };
 }
 

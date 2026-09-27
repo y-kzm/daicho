@@ -2,8 +2,10 @@ import { Hono } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import type { Env } from './env';
 import { AppError } from './errors';
+import attachments from './routes/attachments';
 import bibtex from './routes/bibtex';
 import data from './routes/data';
+import drive from './routes/drive';
 import entries from './routes/entries';
 import exportRoute from './routes/export';
 import filters from './routes/filters';
@@ -30,6 +32,8 @@ export function createApp(): App {
   api.route('/bibtex', bibtex);
   api.route('/export', exportRoute);
   api.route('/maintenance', maintenance);
+  api.route('/attachments', attachments);
+  api.route('/drive', drive);
   app.route('/api', api);
 
   app.onError((err, c) => {

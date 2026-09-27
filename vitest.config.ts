@@ -11,7 +11,9 @@ export default defineWorkersConfig(async () => {
         workers: {
           wrangler: { configPath: './wrangler.toml' },
           miniflare: {
-            bindings: { TEST_MIGRATIONS: migrations, GEMINI_API_KEY: 'test-gemini', ANTHROPIC_API_KEY: 'test-claude' },
+            bindings: { TEST_MIGRATIONS: migrations, GEMINI_API_KEY: 'test-gemini', ANTHROPIC_API_KEY: 'test-claude',
+              GOOGLE_CLIENT_ID: 'test-client-id', GOOGLE_CLIENT_SECRET: 'test-client-secret',
+            },
           },
         },
       },

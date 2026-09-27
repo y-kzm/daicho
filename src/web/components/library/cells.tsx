@@ -24,6 +24,17 @@ export function renderCell(col: ColumnKey, e: Entry, projectId?: number): ReactN
       return e.priority > 0 ? <span className={'prio p' + e.priority}>{PRIORITY_LABELS[e.priority]}</span> : null;
     case 'tags':
       return <span className="t-tags">{e.tags.map((t) => <span key={t} className="tagchip small">{t}</span>)}</span>;
+    case 'pdf': {
+      const first = e.attachments[0];
+      if (!first) return null;
+      // 行のクリック (詳細を開く) に流さず、1 件目を Drive で開く
+      return (
+        <a className="t-pdf" href={first.url} target="_blank" rel="noopener" onClick={(ev) => ev.stopPropagation()}
+          title={e.attachments.map((a) => a.name).join('\n')}>
+          PDF{e.attachments.length > 1 ? ` ${e.attachments.length}` : ''}
+        </a>
+      );
+    }
     case 'projects': {
       if (projectId !== undefined) {
         const c = e.cites[String(projectId)];

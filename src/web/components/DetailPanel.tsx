@@ -8,6 +8,7 @@ import { useDialogs } from '../state/DialogContext';
 import { useToast } from '../state/useToast';
 import { TagPicker } from './dialogs/TagPicker';
 import { VenuePills } from './EntryCard';
+import { DetailFiles } from './library/DetailFiles';
 import { DetailProjects } from './library/DetailProjects';
 import { toEntryInput } from './library/entryInput';
 import { useEntryActions } from './library/useEntryActions';
@@ -126,6 +127,8 @@ function DetailBody({ e, projectId, onClose, onEdit }: { e: Entry; projectId?: n
       </section>
 
       <DetailProjects e={e} projectId={projectId} />
+
+      <DetailFiles e={e} />
 
       {e.summary && (
         <section className="dp-sec e-detail open">

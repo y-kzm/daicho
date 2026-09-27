@@ -186,3 +186,32 @@ input[type="checkbox"] { accent-color: var(--accent); }
   .bulkbar { top: 0; }
   .fp-row { grid-template-columns: 1fr; gap: 4px; }
 }
+
+/* ---------- 詳細パネルの PDF ---------- */
+.df-list { list-style: none; margin: 0 0 10px; padding: 0; }
+.df-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; align-items: center; padding: 5px 0; }
+.df-list a { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
+.df-list a:hover { text-decoration: underline; }
+.df-list .sbtn { grid-row: 1 / span 2; grid-column: 2; }
+.df-meta { grid-column: 1; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.df-note { font-size: 12.5px; line-height: 1.65; color: var(--ink-2); }
+.df-connect { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.df-connect .hbtn { text-decoration: none; }
+.df-drop {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px;
+  border: 1px dashed var(--line); border-radius: var(--radius); background: var(--bg);
+}
+.df-drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.df-drop select { font-size: 12.5px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); padding: 3px 6px; }
+.df-hint { font-size: 12px; color: var(--ink-3); }
+.df-progress { padding: 10px; border: 1px solid var(--line); border-radius: var(--radius); }
+.df-progress-name { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.df-bar { height: 6px; margin: 8px 0 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
+.df-bar span { display: block; height: 100%; background: var(--accent); transition: width .15s; }
+.df-progress-foot { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.t-pdf {
+  font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 4px; white-space: nowrap;
+  background: var(--accent-soft); color: var(--accent); text-decoration: none;
+}
+.t-pdf:hover { text-decoration: underline; }
+.c-pdf { white-space: nowrap; }

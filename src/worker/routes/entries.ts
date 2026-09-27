@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { getAppData } from '../db/app-data';
+import { fileIdsForEntries } from '../db/attachments';
 import { applyMerge } from '../db/merge';
 import {
   bulkApply, deleteEntry, ensureUniqueBibkey, insertEntry, setCiteState, setFlags, setReadState, touchEntry, updateEntry,
@@ -8,6 +9,7 @@ import { todayJst } from '../date';
 import type { Env } from '../env';
 import { AppError } from '../errors';
 import { generateBibkey } from '../services/bibtex';
+import { trashBestEffort } from '../services/drive-session';
 import {
   idList, optBool, optPriority, parseBulkOp, parseEntryInput, parseEntryProjects, parseIdParam, positiveInt, str,
 } from '../validate';
@@ -19,7 +21,12 @@ const entries = new Hono<{ Bindings: Env }>();
 entries.post('/bulk', async (c) => {
   const body = await jsonBody(c);
   if (!Array.isArray(body.ids)) throw new AppError('リクエスト本文が不正です。');
-  await bulkApply(c.env.DB, idList(body.ids), parseBulkOp(body.op));
+  const ids = idList(body.ids);
+  const op = parseBulkOp(body.op);
+  // 論文を消すと添付の行も消えるので、Drive 側を片付けるための id を先に控える
+  const files = op.type === 'delete' ? await fileIdsForEntries(c.env.DB, ids) : [];
+  await bulkApply(c.env.DB, ids, op);
+  await trashBestEffort(c.env, files);
   return c.json(await getAppData(c.env.DB));
 });
 
@@ -50,7 +57,10 @@ entries.put('/:id', async (c) => {
 });
 
 entries.delete('/:id', async (c) => {
-  await deleteEntry(c.env.DB, parseIdParam(c.req.param('id')));
+  const id = parseIdParam(c.req.param('id'));
+  const files = await fileIdsForEntries(c.env.DB, [id]);
+  await deleteEntry(c.env.DB, id);
+  await trashBestEffort(c.env, files);
   return c.json({});
 });
 

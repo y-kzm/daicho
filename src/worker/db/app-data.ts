@@ -1,5 +1,6 @@
-import type { AppData, CiteInfo, CiteState, Entry, FilterQuery, Priority, Project, SavedFilter } from '../../shared/types';
+import type { AppData, Attachment, CiteInfo, CiteState, Entry, FilterQuery, Priority, Project, SavedFilter } from '../../shared/types';
 import { CITE_STATES, CORE_URL, JCR_URL, PRIORITIES, READ_STATES } from '../../shared/types';
+import { ATTACHMENTS_SQL, rowToAttachment, type AttachmentRow } from './attachments';
 
 export interface EntryRow {
   id: number;
@@ -57,7 +58,9 @@ export function toPriority(v: unknown): Priority {
   return (PRIORITIES as readonly number[]).includes(n) ? (n as Priority) : 0;
 }
 
-export function rowToEntry(r: EntryRow, tags: string[], cites: Record<string, CiteInfo>): Entry {
+export function rowToEntry(
+  r: EntryRow, tags: string[], cites: Record<string, CiteInfo>, attachments: Attachment[] = [],
+): Entry {
   return {
     id: r.id,
     added: r.added,
@@ -80,6 +83,7 @@ export function rowToEntry(r: EntryRow, tags: string[], cites: Record<string, Ci
     priority: toPriority(r.priority),
     lastOpenedAt: r.last_opened_at,
     cites,
+    attachments,
   };
 }
 
@@ -107,13 +111,20 @@ export function rowToFilter(r: FilterRow): SavedFilter {
 }
 
 export async function loadEntries(db: D1Database): Promise<Entry[]> {
-  const [rows, tagLinks, citeLinks] = await db.batch([
+  const [rows, tagLinks, citeLinks, files] = await db.batch([
     db.prepare('SELECT * FROM entries ORDER BY id'),
     db.prepare(
       'SELECT et.entry_id, t.name FROM entry_tags et JOIN tags t ON t.id = et.tag_id ORDER BY et.entry_id, et.position',
     ),
     db.prepare('SELECT entry_id, project_id, state, position, memo FROM cites'),
+    db.prepare(ATTACHMENTS_SQL),
   ]);
+  const filesByEntry = new Map<number, Attachment[]>();
+  for (const f of files!.results as unknown as AttachmentRow[]) {
+    const arr = filesByEntry.get(f.entry_id) ?? [];
+    arr.push(rowToAttachment(f));
+    filesByEntry.set(f.entry_id, arr);
+  }
   const tagsByEntry = new Map<number, string[]>();
   for (const l of tagLinks!.results as unknown as TagLink[]) {
     const arr = tagsByEntry.get(l.entry_id) ?? [];
@@ -127,7 +138,7 @@ export async function loadEntries(db: D1Database): Promise<Entry[]> {
     citesByEntry.set(l.entry_id, obj);
   }
   return (rows!.results as unknown as EntryRow[]).map((r) =>
-    rowToEntry(r, tagsByEntry.get(r.id) ?? [], citesByEntry.get(r.id) ?? {}),
+    rowToEntry(r, tagsByEntry.get(r.id) ?? [], citesByEntry.get(r.id) ?? {}, filesByEntry.get(r.id) ?? []),
   );
 }
 

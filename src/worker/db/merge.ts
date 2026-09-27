@@ -56,6 +56,10 @@ export async function applyMerge(db: D1Database, keepId: number, removeIds: numb
   if (!keep || removed.length !== rm.length) throw notFound('エントリ');
   const m = mergeEntries(keep, removed);
   await db.batch([
+    // 付けてある PDF は残す側へ移す (論文の削除に連動して消えないよう、削除より先に行う)
+    db
+      .prepare('UPDATE attachments SET entry_id = ? WHERE entry_id IN (SELECT value FROM json_each(?))')
+      .bind(keepId, JSON.stringify(rm)),
     ...rm.map((id) => db.prepare('DELETE FROM entries WHERE id = ?').bind(id)),
     entryUpdateStatement(db, keepId, m.input),
     db.prepare('UPDATE entries SET starred = ?, priority = ? WHERE id = ?').bind(m.starred ? 1 : 0, m.priority, keepId),

@@ -40,6 +40,6 @@ export function makeEntry(over: Partial<Entry> = {}): Entry {
   return {
     id: 1, added: '2026-01-01', tags: [], title: 'T', summary: '', url: '', doi: '', year: '', country: '',
     publisher: '', journal: '', impactFactor: '', conference: '', core: '', bibkey: '', read: '未読', note: '',
-    starred: false, priority: 0, lastOpenedAt: '', cites: {}, ...over,
+    starred: false, priority: 0, lastOpenedAt: '', cites: {}, attachments: [], ...over,
   };
 }

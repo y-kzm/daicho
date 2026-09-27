@@ -1,6 +1,9 @@
 import { api } from '../../api';
 import { navigate, type Route } from '../../lib/router';
 import { useAppData } from '../../state/AppDataContext';
+import { useDialogs } from '../../state/DialogContext';
+import { useDrive } from '../../state/DriveContext';
+import { useToast } from '../../state/useToast';
 import { SideItem } from './SideItem';
 
 const SERVICES: [string, string, string][] = [
@@ -14,23 +17,43 @@ const SERVICES: [string, string, string][] = [
   ['https://portal.core.edu.au/conf-ranks/', 'CORE Portal', 'CORE Ranking の自動検索'],
   ['https://datatracker.ietf.org/', 'IETF Datatracker', 'Internet-Draft のメタデータ'],
   ['https://tex2e.github.io/rfc-translater/html/index.html', 'RFC Translater', 'RFC エントリのリンク先 (日本語訳)'],
+  ['https://developers.google.com/drive', 'Google Drive API', 'PDF の保存'],
 ];
 
 /** showStats: プロジェクトを開いている間は、統計を「このプロジェクト」の中に出すのでここでは出さない */
 export function SidebarFooter({ route, showStats = true }: { route: Route; showStats?: boolean }) {
   const { data } = useAppData();
+  const { status, disconnect } = useDrive();
+  const { open } = useDialogs();
+  const toast = useToast();
+  const askDisconnect = () => open({
+    kind: 'confirm', title: 'Google Drive の接続を外す',
+    body: '接続を外すと、PDF の追加と削除ができなくなります。Google Drive のファイルと、論文に付けた URL は残ります。',
+    confirmLabel: '接続を外す',
+    onConfirm: async () => { await disconnect(); toast('Google Drive の接続を外しました'); },
+  });
   return (
     <div className="side-foot">
       {showStats && <SideItem label="統計" on={route.name === 'stats'} onClick={() => navigate({ name: 'stats' })} />}
 
       <details className="side-acc">
-        <summary>エクスポートとリンク</summary>
+        <summary>設定とリンク</summary>
         <div className="side-links">
           <a href={api.exportUrl('csv')}>CSV でエクスポート</a>
           <a href={api.exportUrl('json')}>JSON でエクスポート</a>
           <a href={data.links.jcr} target="_blank" rel="noopener">Journal Citation Reports ↗</a>
           <a href={data.links.core} target="_blank" rel="noopener">CORE Conference Ranks ↗</a>
         </div>
+        {status?.configured && (
+          <>
+            <div className="side-sub">Google Drive</div>
+            <div className="side-links">
+              {status.connected
+                ? <button type="button" className="side-link-btn" onClick={askDisconnect}>接続を外す</button>
+                : <a href={api.driveConnectUrl}>接続する</a>}
+            </div>
+          </>
+        )}
         <div className="side-sub">利用しているサービス</div>
         <div className="side-links">
           {SERVICES.map(([href, name, note]) => (

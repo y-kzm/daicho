@@ -1,5 +1,6 @@
 import type {
-  AppData, BulkOp, CiteState, CoreResult, DoiMetadata, DuplicateGroup, EntryInput, EntryProjectInput, FilterQuery, LlmInput, LlmProvider,
+  AppData, AttachmentKind, BulkOp, CiteState, CoreResult, DoiMetadata, DriveStatus, DuplicateGroup, EntryInput, EntryProjectInput,
+  FilterQuery, LlmInput, LlmProvider, UploadSession,
   Priority, ReadState, SummaryPromptResult, SummaryResult, TagProposal,
 } from '../shared/types';
 
@@ -113,6 +114,17 @@ export const api = {
   llmTags: (input: LlmInput) => call<{ tags: string[] }>('POST', '/llm/tags', input, LONG_TIMEOUT_MS),
   llmTagsBatch: (ids: number[], provider: LlmProvider) =>
     call<TagProposal[]>('POST', '/llm/tags/batch', { ids, provider }, LONG_TIMEOUT_MS),
+
+  // PDF (実体は Google Drive)
+  driveStatus: () => call<DriveStatus>('GET', '/drive/status'),
+  /** Google の同意画面へ移動する URL (ページごと移動して使う) */
+  driveConnectUrl: '/api/drive/connect',
+  driveDisconnect: () => send('POST', '/drive/disconnect'),
+  startUpload: (entryId: number, kind: AttachmentKind, file: { size: number; type: string }) =>
+    call<UploadSession>('POST', '/attachments/session', { entryId, kind, size: file.size, mimeType: file.type }),
+  addAttachment: (entryId: number, kind: AttachmentKind, fileId: string) =>
+    call<AppData>('POST', '/attachments', { entryId, kind, fileId }),
+  deleteAttachment: (id: number) => call<AppData>('DELETE', `/attachments/${id}`),
 
   // 出力・保守
   bibtex: (ids: number[]) => call<{ bibtex: string }>('POST', '/bibtex', { ids }, LONG_TIMEOUT_MS),

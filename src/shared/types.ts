@@ -12,6 +12,35 @@ export const JCR_URL =
   'https://jcr.clarivate.com/jcr/home?app=jcr&Init=Yes&authCode=null&SrcApp=IC2LS';
 export const CORE_URL = 'https://portal.core.edu.au/conf-ranks/';
 
+export const ATTACHMENT_KINDS = ['本文', '補足資料', 'スライド', 'その他'] as const;
+export type AttachmentKind = (typeof ATTACHMENT_KINDS)[number];
+/** 1 ファイルの上限 (100 MB) */
+export const PDF_MAX_BYTES = 100 * 1024 * 1024;
+/** 1 論文に付けられる PDF の上限 */
+export const ATTACHMENTS_MAX = 10;
+
+/** 論文に付けた PDF。実体は Google Drive にあり、url は Drive の閲覧 URL */
+export interface Attachment {
+  id: number;
+  kind: AttachmentKind;
+  name: string;
+  url: string;
+  size: number;
+  addedAt: string;
+}
+
+/** Google Drive の接続状態。configured = Worker に client id / secret がある */
+export interface DriveStatus {
+  configured: boolean;
+  connected: boolean;
+}
+
+/** アップロード先 (Google が発行する URL)。ブラウザはここへ PDF を PUT する */
+export interface UploadSession {
+  uploadUrl: string;
+  name: string;
+}
+
 export interface CiteInfo {
   state: CiteState;
   position: number;
@@ -41,10 +70,11 @@ export interface Entry {
   lastOpenedAt: string;
   /** key = String(projectId) */
   cites: Record<string, CiteInfo>;
+  attachments: Attachment[];
 }
 
-/** 追加・編集フォームから送る形 (cites / starred / priority / lastOpenedAt は別 API で変える) */
-export type EntryInput = Omit<Entry, 'id' | 'added' | 'cites' | 'starred' | 'priority' | 'lastOpenedAt'>;
+/** 追加・編集フォームから送る形 (cites / starred / priority / lastOpenedAt / attachments は別 API で変える) */
+export type EntryInput = Omit<Entry, 'id' | 'added' | 'cites' | 'starred' | 'priority' | 'lastOpenedAt' | 'attachments'>;
 
 /** 追加と同時に入れるプロジェクト (POST /api/entries の projects) */
 export interface EntryProjectInput {

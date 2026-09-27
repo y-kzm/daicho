@@ -6,6 +6,8 @@ Daicho を Cloudflare Workers + D1 に構築し、GitHub への push で自動�
 - 最初に GitHub へ push するとき (`git push`)
 - 旧 Google スプレッドシート版のデータを移行するとき (任意、[7. データ移行](#7-データ移行-任意))
 
+PDF を Google Drive に保存する設定 (任意、[手順 8](#8-pdf-を-google-drive-に保存する-任意)) も、Web 画面だけで完結します。
+
 > Dashboard のメニュー名やボタン名は Cloudflare 側の更新で変わることがあります。見つからない場合は近い名前の項目を探してください。
 
 ## 全体の流れ
@@ -19,6 +21,7 @@ Daicho を Cloudflare Workers + D1 に構築し、GitHub への push で自動�
 | 5 | **Cloudflare Access で自分だけに制限する** | Cloudflare |
 | 6 | LLM の API キーを登録する (任意) | Cloudflare |
 | 7 | データ移行 (任意) | Cloudflare または ターミナル |
+| 8 | PDF を Google Drive に保存する (任意) | Google Cloud / Cloudflare |
 
 **順番を守る理由:** 手順 4 の直後は、アプリが誰でも開ける状態です。この時点では DB が空で API キーも未登録なので、露出するものはありません。API キーとデータは、手順 5 で Access を有効にしてから入れます。
 
@@ -194,6 +197,86 @@ DELETE FROM cites; DELETE FROM entry_tags; DELETE FROM entries;
 DELETE FROM tags;  DELETE FROM projects;   DELETE FROM saved_filters;
 ```
 
+## 8. PDF を Google Drive に保存する (任意)
+
+論文の詳細パネルから PDF を選ぶと、あなたの Google Drive の「Daicho」フォルダに保存し、その URL を論文に付けます。**必ず手順 5 (Access) の後に行います。**
+
+### 仕組みと安全性
+
+| 項目 | 内容 |
+|---|---|
+| 保存先 | 接続した Google アカウントの Drive。フォルダ「Daicho」を自動で作ります |
+| ファイル名 | `{BibTeX キー} - {タイトル}.pdf`。本文以外は ` (補足資料)` などを付けます |
+| 共有 | 変更しません。保存した PDF を開けるのは、あなたの Google アカウントだけです |
+| 権限 | `drive.file`。Daicho が保存したファイルだけを扱えます。Drive の他のファイルは読めません |
+| 送信の経路 | ブラウザから Google へ直接送ります。Worker は送信先の発行だけを行います |
+| 接続情報 | Google が発行する更新用トークンを D1 に保存します。API の応答とエクスポートには含めません |
+
+### 8-1. Google Cloud でプロジェクトと API を用意する
+
+1. [Google Cloud Console](https://console.cloud.google.com/) を開き、新しいプロジェクトを作る (名前は `daicho` など)
+2. **API とサービス** → **ライブラリ** で **Google Drive API** を検索し、**有効にする**
+
+### 8-2. 同意画面を設定する
+
+1. **API とサービス** → **OAuth 同意画面** (Google Auth Platform) を開く
+2. アプリ名 (`Daicho` など) とサポート用のメールアドレスを入力する
+3. 対象は **外部** を選ぶ
+4. **データアクセス** (スコープ) で、次のスコープを追加する
+
+```
+https://www.googleapis.com/auth/drive.file
+```
+
+5. **対象** (公開ステータス) で **アプリを公開** を押し、**本番環境** にする
+
+> **手順 5 を省かないでください。** 「テスト中」のままだと、接続が 7 日で切れます。`drive.file` は機密性の高いスコープではないので、公開に Google の審査は必要ありません。
+
+### 8-3. OAuth クライアントを作る
+
+1. **API とサービス** → **認証情報** → **認証情報を作成** → **OAuth クライアント ID**
+2. アプリケーションの種類は **ウェブ アプリケーション** を選ぶ
+3. **承認済みのリダイレクト URI** に、次を追加する (サブドメインは自分のものに置き換える)
+
+```
+https://daicho.<サブドメイン>.workers.dev/api/drive/callback
+```
+
+4. 作成後に表示される **クライアント ID** と **クライアント シークレット** を控える
+
+「承認済みの JavaScript 生成元」は空のままで構いません。
+
+### 8-4. Cloudflare に登録する
+
+クライアント シークレットは**リポジトリに書きません。** Dashboard に直接登録します。
+
+1. **Workers & Pages** → `daicho` → **Settings** → **Variables and Secrets** → **Add**
+2. Type は **Secret** を選び、次の 2 つを登録して **Deploy** を押す
+
+| Variable name | 値 |
+|---|---|
+| `GOOGLE_CLIENT_ID` | 8-3 のクライアント ID |
+| `GOOGLE_CLIENT_SECRET` | 8-3 のクライアント シークレット |
+
+これは Worker の実行時の変数です。手順 3 のビルド用の変数 (`D1_DATABASE_ID`) とは別の欄です。
+
+### 8-5. Daicho から接続する
+
+1. Daicho で論文を開き、詳細パネルの **PDF** にある **Google Drive に接続** を押す
+2. Google の画面でアカウントを選び、許可する
+3. Daicho に戻り、「Google Drive に接続しました」と表示されれば完了
+
+以後は **PDF を選ぶ** か、PDF をドロップすると保存されます。
+
+### 知っておくこと
+
+- PDF は 1 ファイル 100 MB まで、1 つの論文に 10 件までです。
+- PDF を削除すると、Drive のゴミ箱へ移します。30 日以内なら Drive から戻せます。
+- 論文を削除すると、付けていた PDF も Drive のゴミ箱へ移します。一括削除では 1 回 40 件までで、それを超えた分は Drive に残ります。
+- 接続を外すには、サイドバーの **設定とリンク** → **Google Drive** → **接続を外す** を押します。Drive のファイルと、論文に付けた URL は残ります。
+- 別の Google アカウントに接続し直すと、新しいアカウントの Drive に「Daicho」フォルダを作ります。以前の PDF は元のアカウントに残り、Daicho からは削除できなくなります。
+- CSV のエクスポートには PDF の URL を含めません (従来の 17 列のままです)。JSON のエクスポートには含めます。
+
 ---
 
 ## 日常の運用
@@ -219,6 +302,7 @@ GitHub の Web 画面でファイルを編集してコミットした場合も�
 | 同上 | 出版国の再判定は 1 回 15 件ずつ |
 | D1 の呼び出し回数 | 一括操作は 1 回 200 件まで |
 | Zero Trust Free | 50 ユーザーまで、ログ保持 24 時間 |
+| 外部リクエスト 50 件/リクエスト | 論文の一括削除で Drive のゴミ箱へ移すのは 1 回 40 件まで |
 
 ## うまくいかないとき
 
@@ -232,12 +316,16 @@ GitHub の Web 画面でファイルを編集してコミットした場合も�
 | 画面は出るが一覧が読み込めない | マイグレーションが未適用。Deploy command が表のとおりか確認し、再デプロイする |
 | 「ログインセッションが切れました」と表示される | Access のセッション切れ。ページを再読み込みしてログインし直す |
 | 概要生成がエラーになる | API キーの名前と Type (Secret) を確認する (手順 6) |
+| PDF 欄に「Google Drive の設定が必要です」と出る | `GOOGLE_CLIENT_ID` と `GOOGLE_CLIENT_SECRET` を Secret として登録し、Deploy する (手順 8-4) |
+| Google の画面で `redirect_uri_mismatch` と出る | 承認済みのリダイレクト URI が、アプリの URL + `/api/drive/callback` と完全に一致しているか確認する (手順 8-3) |
+| 数日で「接続が切れています」と出る | 同意画面が「テスト中」のまま。本番環境に公開してから接続し直す (手順 8-2) |
+| PDF の送信が途中で失敗する | 通信を確認してやり直す。送信先の URL は 1 回ごとに発行するので、やり直しで問題ありません |
 | シークレットウィンドウでログイン画面が出ない | Access が無効。手順 5 をやり直す |
 
 ## セキュリティの確認項目
 
 - [ ] Access が **All traffic** で有効になっている (シークレットウィンドウで確認済み)
-- [ ] API キーは Dashboard の **Secret** にだけ登録し、リポジトリに書いていない
+- [ ] API キーと Google のクライアント シークレットは Dashboard の **Secret** にだけ登録し、リポジトリに書いていない
 - [ ] `wrangler.toml` の `database_id` がプレースホルダのままで、`.env` と `wrangler.deploy.toml` をコミットしていない
 - [ ] CSV と `import.sql` をコミットしていない (`temp/` とルート直下の `*.csv` は gitignore 済み)
 - [ ] GitHub App の権限は、このリポジトリだけに限定している

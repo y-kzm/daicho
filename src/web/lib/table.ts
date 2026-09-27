@@ -1,7 +1,7 @@
 import type { CiteState, Entry, GroupKey, Priority, ReadState, SortKey } from '../../shared/types';
 import { CITE_STATES, PRIORITY_LABELS, READ_STATES } from '../../shared/types';
 
-export type ColumnKey = 'star' | 'title' | 'year' | 'venue' | 'core' | 'read' | 'priority' | 'tags' | 'projects' | 'added' | 'lastOpened';
+export type ColumnKey = 'star' | 'title' | 'year' | 'venue' | 'core' | 'read' | 'priority' | 'tags' | 'pdf' | 'projects' | 'added' | 'lastOpened';
 
 export const ALL_COLUMNS: { key: ColumnKey; label: string; sort?: SortKey }[] = [
   { key: 'star', label: '★' },
@@ -12,12 +12,13 @@ export const ALL_COLUMNS: { key: ColumnKey; label: string; sort?: SortKey }[] = 
   { key: 'read', label: '読了', sort: 'read' },
   { key: 'priority', label: '優先度', sort: 'priority' },
   { key: 'tags', label: 'タグ' },
+  { key: 'pdf', label: 'PDF' },
   { key: 'projects', label: 'プロジェクト数' },
   { key: 'added', label: '追加日', sort: 'added' },
   { key: 'lastOpened', label: '最近開いた', sort: 'lastOpened' },
 ];
 
-export const DEFAULT_COLUMNS: ColumnKey[] = ['star', 'title', 'year', 'venue', 'core', 'read', 'priority', 'tags', 'added'];
+export const DEFAULT_COLUMNS: ColumnKey[] = ['star', 'title', 'year', 'venue', 'core', 'read', 'priority', 'tags', 'pdf', 'added'];
 
 /** CORE ランクの順 (A* が先頭)。旧 lib/filters.ts から移動 */
 export const CORE_ORDER: Record<string, number> = { 'A*': 0, 'A＊': 0, A: 1, B: 2, C: 3 };
