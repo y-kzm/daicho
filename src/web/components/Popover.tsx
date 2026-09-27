@@ -31,7 +31,7 @@ export function Popover({ label, title, className = 'sbtn', align = 'left', chil
   }, [open]);
 
   return (
-    <span className="popover" ref={ref}>
+    <span className={'popover' + (open ? ' open' : '')} ref={ref}>
       <button type="button" className={className} title={title} aria-expanded={open}
         onClick={(ev) => { ev.stopPropagation(); setOpen((v) => !v); }}>
         {label}

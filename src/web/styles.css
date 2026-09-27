@@ -404,6 +404,9 @@
   .side-row .side-item { flex: 1; min-width: 0; }
   .side-row .popover { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); opacity: 0; }
   .side-row:hover .popover, .side-row .popover:focus-within { opacity: 1; }
+  /* transform が重なり順の枠を作るので、開いている間は枠ごと後続の行より前に出す。
+     開いている間は hover や focus に関係なく表示する (Safari はボタンのクリックで focus しない) */
+  .side-row .popover.open { opacity: 1; z-index: 30; }
   .side-row.has-menu:hover .side-item .n { visibility: hidden; }
   .side-more {
     border: none; background: var(--line-soft); color: var(--ink); cursor: pointer;
