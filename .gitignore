@@ -2,8 +2,10 @@ node_modules/
 dist/
 .wrangler/
 .dev.vars
+wrangler.deploy.toml
 .env
 .env.*
+!.env.example
 *.sql.bak
 import.sql
 /*.csv

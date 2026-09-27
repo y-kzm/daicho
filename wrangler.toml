@@ -12,6 +12,8 @@ run_worker_first = ["/api/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "daicho"
+# プレースホルダです。実際の ID はここに書きません。
+# 環境変数 D1_DATABASE_ID から wrangler.deploy.toml を生成します (BUILD.md の手順 2)。
 database_id = "00000000-0000-0000-0000-000000000000"
 migrations_dir = "migrations"
 

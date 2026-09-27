@@ -13,7 +13,7 @@ Daicho を Cloudflare Workers + D1 に構築し、GitHub への push で自動�
 | 順 | 作業 | 場所 |
 |---|---|---|
 | 1 | GitHub にリポジトリを作って push | GitHub / ターミナル |
-| 2 | D1 データベースを作り、ID を `wrangler.toml` に書く | Cloudflare / GitHub |
+| 2 | D1 データベースを作り、ID を控える | Cloudflare |
 | 3 | Worker を作り、GitHub と接続する (Workers Builds) | Cloudflare |
 | 4 | 初回ビルドとデプロイを確認する | Cloudflare |
 | 5 | **Cloudflare Access で自分だけに制限する** | Cloudflare |
@@ -38,7 +38,7 @@ Daicho を Cloudflare Workers + D1 に構築し、GitHub への push で自動�
 | 本番ブランチ | `main` | Workers Builds の設定 |
 | ビルド出力 | `dist/` (gitignore 済み) | `vite.config.ts` |
 
-`wrangler.toml` の `database_id` には、作成済みの D1 の ID が入っています。別の Cloudflare アカウントで構築する場合や D1 を作り直す場合は、手順 2 で置き換えてください。`database_id` は秘密情報ではないので、コミットして構いません。
+`wrangler.toml` の `database_id` はプレースホルダ (`00000000-0000-0000-0000-000000000000`) です。実際の ID はリポジトリに書きません。Workers Builds の変数 `D1_DATABASE_ID` に登録し、デプロイ時に `wrangler.deploy.toml` を生成して使います。
 
 ---
 
@@ -61,18 +61,17 @@ git status --short --ignored | grep -E 'csv|import.sql|\.dev\.vars|\.env' || ech
 
 ## 2. D1 データベースを作る
 
-> 既に `wrangler.toml` の ID の D1 を使う場合は、この手順を飛ばせます。
-
 1. Cloudflare Dashboard → **Storage & Databases** → **D1 SQL database** → **Create Database**
 2. 名前に `daicho` を入力して **Create**
-3. 作成後の画面に表示される **Database ID** をコピーする
-4. GitHub の Web 画面で `wrangler.toml` を開き、鉛筆アイコン (Edit) から `database_id` を書き換えて **Commit changes** する
+3. 作成後の画面に表示される **Database ID** を控える。手順 3 で Workers Builds の変数に登録する
+
+**ID は `wrangler.toml` に書きません。** リポジトリにはプレースホルダだけを置きます。デプロイコマンドが `D1_DATABASE_ID` を読み、ID を差し込んだ `wrangler.deploy.toml` をビルド環境の中に生成します。
 
 ```toml
 [[d1_databases]]
 binding = "DB"
 database_name = "daicho"
-database_id = "ここにコピーした ID"
+database_id = "00000000-0000-0000-0000-000000000000"   # このまま変更しない
 migrations_dir = "migrations"
 ```
 
@@ -91,21 +90,28 @@ migrations_dir = "migrations"
 | Project name | `daicho` (`wrangler.toml` の `name` と同じにする。違うとビルドが失敗します) |
 | Production branch | `main` |
 | Build command | `npm run build` |
-| Deploy command | `npx wrangler d1 migrations apply daicho --remote && npx wrangler deploy` |
+| Deploy command | `npm run deploy:ci` |
 | Root directory | 空のまま |
 
-4. **Save and Deploy** (または Create and deploy) を押す
+4. **Build variables and secrets** (ビルド用の変数) に次を追加する
+
+| Variable name | 値 |
+|---|---|
+| `D1_DATABASE_ID` | 手順 2 で控えた Database ID |
+
+5. **Save and Deploy** (または Create and deploy) を押す
 
 ### 既にある Worker に接続する場合
 
 1. Dashboard → **Workers & Pages** → `daicho` → **Settings** → **Builds**
 2. Git Repository の **Connect** (接続済みなら **Manage**) を押し、リポジトリと本番ブランチを選ぶ
-3. Build command と Deploy command を上の表のとおりにする
+3. Build command と Deploy command を上の表のとおりにし、ビルド用の変数 `D1_DATABASE_ID` を登録する
 
 ### 設定の意味
 
 - **Build command** `npm run build`: Vite がフロントエンドを `dist/` に出力します。
-- **Deploy command**: 先に未適用のマイグレーションだけを D1 に適用し、その後 Worker と `dist/` をデプロイします。適用済みのものは飛ばすので、毎回実行して問題ありません。
+- **Deploy command** `npm run deploy:ci`: 次の 3 つを順に実行します。`D1_DATABASE_ID` から `wrangler.deploy.toml` を生成する。未適用のマイグレーションだけを D1 に適用する。Worker と `dist/` をデプロイする。適用済みのマイグレーションは飛ばすので、毎回実行して問題ありません。
+- **`D1_DATABASE_ID`**: ビルド用の変数です。Worker の実行時の変数 (Variables and Secrets) とは別の欄なので、Settings → Builds の側に登録します。
 - テストを通過条件にしたい場合は、Build command を `npm run check && npm run build` にします。ビルド時間は延びます。
 
 ## 4. 初回ビルドとデプロイを確認する
@@ -174,7 +180,9 @@ npm run import-sheet --silent -- \
 
 ```bash
 npx wrangler login
-npx wrangler d1 execute daicho --remote --file=temp/import.sql
+cp .env.example .env          # D1_DATABASE_ID に Database ID を記入 (初回だけ)
+npm run config:render         # wrangler.deploy.toml を生成
+npx wrangler d1 execute daicho --remote --config wrangler.deploy.toml --file=temp/import.sql
 ```
 
 ### 7-3. やり直す場合
@@ -217,7 +225,8 @@ GitHub の Web 画面でファイルを編集してコミットした場合も�
 | 症状 | 原因と対処 |
 |---|---|
 | ビルドが「Worker name が一致しない」で失敗 | Dashboard の Worker 名と `wrangler.toml` の `name` を同じにする |
-| デプロイが D1 のエラーで失敗 | `database_id` が正しいか確認する (手順 2) |
+| デプロイが `D1_DATABASE_ID がありません` で失敗 | Settings → Builds のビルド用の変数に `D1_DATABASE_ID` を登録する (手順 3) |
+| デプロイが D1 のエラーで失敗 | `D1_DATABASE_ID` の値が Dashboard の Database ID と同じか確認する |
 | 画面は出るが一覧が読み込めない | マイグレーションが未適用。Deploy command が表のとおりか確認し、再デプロイする |
 | 「ログインセッションが切れました」と表示される | Access のセッション切れ。ページを再読み込みしてログインし直す |
 | 概要生成がエラーになる | API キーの名前と Type (Secret) を確認する (手順 6) |
@@ -227,6 +236,7 @@ GitHub の Web 画面でファイルを編集してコミットした場合も�
 
 - [ ] Access が **All traffic** で有効になっている (シークレットウィンドウで確認済み)
 - [ ] API キーは Dashboard の **Secret** にだけ登録し、リポジトリに書いていない
+- [ ] `wrangler.toml` の `database_id` がプレースホルダのままで、`.env` と `wrangler.deploy.toml` をコミットしていない
 - [ ] CSV と `import.sql` をコミットしていない (`temp/` とルート直下の `*.csv` は gitignore 済み)
 - [ ] GitHub App の権限は、このリポジトリだけに限定している
 - [ ] リポジトリを Public にする場合、`wrangler.toml` の `CONTACT_MAILTO` に公開したくないアドレスを書いていない
@@ -241,3 +251,5 @@ npm run dev                # http://localhost:8787
 npm run dev:web            # フロントだけを Vite で開発 (/api は 8787 へ中継)
 npm run check              # 型検査とテスト
 ```
+
+ローカルの開発とテストは、プレースホルダの ID のまま動きます。本番の D1 を手元から操作するとき (`npm run deploy`、`npm run db:migrate`) だけ、`.env` の `D1_DATABASE_ID` が必要です。

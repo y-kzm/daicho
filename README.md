@@ -135,7 +135,11 @@ flowchart TD
    ```bash
    npx wrangler d1 create daicho
    ```
-   出力された `database_id` を `wrangler.toml` の `[[d1_databases]]` に書き込みます。
+   出力された `database_id` は `wrangler.toml` に書きません。`.env.example` を `.env` にコピーし、`D1_DATABASE_ID` に設定します。
+   ```bash
+   cp .env.example .env   # D1_DATABASE_ID=<出力された ID> を記入
+   ```
+   `wrangler.toml` の `database_id` はプレースホルダのままにします。デプロイ時に `.env` の値から `wrangler.deploy.toml` を生成します (どちらも gitignore 済み)。
 3. **スキーマの適用**
    ```bash
    npm run db:migrate
@@ -209,13 +213,13 @@ npm run deploy
    ```
 4. 問題なければ本番 D1 に投入する
    ```bash
-   npx wrangler d1 execute daicho --remote --file=import.sql
+   npm run config:render && npx wrangler d1 execute daicho --remote --config wrangler.deploy.toml --file=import.sql
    ```
 
 **注意:** このスクリプトは冪等ではありません。空の DB に 1 回だけ実行してください。やり直す場合は次で全消去できます。
 
 ```bash
-npx wrangler d1 execute daicho --remote --command "DELETE FROM cites; DELETE FROM entry_tags; DELETE FROM entries; DELETE FROM tags; DELETE FROM projects; DELETE FROM settings;"
+npx wrangler d1 execute daicho --remote --config wrangler.deploy.toml --command "DELETE FROM cites; DELETE FROM entry_tags; DELETE FROM entries; DELETE FROM tags; DELETE FROM projects; DELETE FROM settings;"
 ```
 
 ## エクスポート
