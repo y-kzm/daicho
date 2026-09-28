@@ -115,6 +115,26 @@ export interface SiteSearchResult {
   tried: string[];
 }
 
+/** 会議の名前によく出る語。同じ会議かどうかの判断には使わない */
+const GENERIC = new Set([
+  'the', 'of', 'on', 'and', 'for', 'in', 'international', 'conference', 'symposium', 'workshop', 'annual', 'ieee', 'acm', 'ifip', 'usenix',
+  'joint', 'proceedings', 'meeting', 'congress', 'th', 'st', 'nd', 'rd',
+]);
+
+const keyWords = (name: string): Set<string> =>
+  new Set(name.toLowerCase().replace(/[^a-z]+/g, ' ').split(' ').filter((w) => w.length >= 2 && !GENERIC.has(w)));
+
+/**
+ * 2 つの名前が、同じ会議のものらしいか。略称が同じでも別の会議がある (ICCS など) ので、名前の語の重なりで確かめる。
+ * どちらかに特徴のある語が無い場合は、判断できないので同じものとして扱う。
+ */
+export function sameSeries(a: string, b: string): boolean {
+  const [x, y] = [keyWords(a), keyWords(b)];
+  if (!x.size || !y.size) return true;
+  const shared = [...x].filter((w) => y.has(w)).length;
+  return shared / Math.min(x.size, y.size) >= 0.5;
+}
+
 /* ---------- 時刻 ---------- */
 
 const pad = (n: number): string => String(n).padStart(2, '0');

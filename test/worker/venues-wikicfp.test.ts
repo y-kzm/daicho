@@ -118,6 +118,21 @@ describe('fetching', () => {
     await searchWikicfp('foo conf', fetcher, now);
     expect(urls).toHaveLength(4);
   });
+  it('fetches once when the same search arrives twice at the same time', async () => {
+    let n = 0;
+    const fetcher = async () => { n++; await Promise.resolve(); return page(SEARCH); };
+    const [a, b] = await Promise.all([searchWikicfp('foo', fetcher, () => 5), searchWikicfp('foo', fetcher, () => 5)]);
+    expect(n).toBe(1);
+    expect(a).toEqual(b);
+  });
+  it('reads a hostile page in a short time', () => {
+    for (const html of ['<tr'.repeat(160_000), '<th'.repeat(160_000), '<td rowspan="2"'.repeat(30_000), 'property="v:summary" '.repeat(20_000), '<tr>' + ' '.repeat(400_000)]) {
+      const t0 = Date.now();
+      parseSearch(html);
+      parseEvent(html);
+      expect(Date.now() - t0, html.slice(0, 16)).toBeLessThan(1000);
+    }
+  });
   it('reports a failure and a page it cannot read', async () => {
     await expect(searchWikicfp('foo', async () => page('', 0))).rejects.toThrow(/WikiCFP から取得できません/);
     await expect(searchWikicfp('f', async () => page(SEARCH))).rejects.toThrow(/2 文字以上/);
@@ -153,6 +168,27 @@ describe('routes', () => {
     const again = await call<Data>('POST', '/api/venues/import', ev.json);
     expect(again.json.summary).toMatchObject({ created: false, added: 0, updated: 1 });
     expect(again.json.venues).toHaveLength(1);
+  });
+
+  it('keeps conferences apart when they only share the acronym', async () => {
+    serve();
+    const foo = (await call<VenueImport & ErrorBody>('GET', '/api/venues/wikicfp/events/1001')).json;
+    await call<Data>('POST', '/api/venues/import', foo);
+    // 同じ会議の別の年 (名前の書き方が少し違う)
+    const next = { venue: { ...foo.venue, name: 'The IEEE Foo Communications and Networking Conference (FOO)' }, editions: [{ ...foo.editions[0]!, year: 2027, startDate: '2027-01-09', endDate: '2027-01-12' }] };
+    const r1 = await call<Data>('POST', '/api/venues/import', next);
+    expect(r1.json.venues.map((v) => [v.sourceKey, v.editions.map((e) => e.year)])).toEqual([['wikicfp/foo', [2027, 2026]]]);
+    // 略称は同じだが、別の会議
+    const other = { venue: { ...foo.venue, name: 'International Conference on Formal Ontology Objects' }, editions: [{ ...foo.editions[0]!, year: 2025, startDate: '', endDate: '', deadlines: [] }] };
+    const r2 = await call<Data>('POST', '/api/venues/import', other);
+    expect(r2.json.summary).toMatchObject({ created: true, added: 1 });
+    expect(r2.json.venues.map((v) => [v.sourceKey, v.name, v.editions.map((e) => e.year)]).sort()).toEqual([
+      ['wikicfp/foo#2', 'International Conference on Formal Ontology Objects', [2025]],
+      ['wikicfp/foo', 'The IEEE Foo Communications and Networking Conference (FOO)', [2027, 2026]],
+    ]);
+    const r3 = await call<Data>('POST', '/api/venues/import', other);
+    expect(r3.json.summary).toMatchObject({ created: false, updated: 1 });
+    expect(r3.json.venues).toHaveLength(2);
   });
 
   it('rejects a bad query, a bad id and a missing event', async () => {

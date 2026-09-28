@@ -10,7 +10,10 @@ export const WIKICFP_HOME = 'http://www.wikicfp.com/';
 
 /** 公開データに無い会議を、WikiCFP で探して取り込む。取得は、利用者がボタンを押したときだけ行う */
 export function WikicfpSearch({ query, onImported }: Props) {
-  const { apply } = useVenues();
+  const { data, apply } = useVenues();
+  // 追跡中の会議の略称 (同じ会議を 2 重に登録しないように、結果に印を付ける)
+  const tracked = new Set(data.venues.filter((v) => v.kind === 'conference' && v.acronym).map((v) => v.acronym.toLowerCase()));
+  const isTracked = (title: string): boolean => title.toLowerCase().replace(/\b(19|20)\d{2}\b/g, ' ').split(/[^a-z0-9&*+]+/).some((w) => tracked.has(w));
   const toast = useToast();
   const [asked, setAsked] = useState('');
   const [hits, setHits] = useState<WikicfpHit[] | null>(null);
@@ -65,7 +68,7 @@ export function WikicfpSearch({ query, onImported }: Props) {
           {shown.map((h) => (
             <li key={h.eventId} className="vn-wk-item">
               <span className="vn-wk-main">
-                <span className="vn-acr">{h.title}</span>
+                <span className="vn-acr">{h.title}{isTracked(h.title) && <span className="vn-due-label">同じ略称の会議を追跡中</span>}</span>
                 <span className="vn-name">{h.name}</span>
                 <span className="vn-wk-facts">
                   {h.when && <span>開催 {h.when}</span>}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  daysUntil, dueInstant, editionTitle, estimateNext, hasTime, isDueLocal, isIsoDate, nextYearUrls, parseDateRange, shiftYears,
+  daysUntil, dueInstant, editionTitle, estimateNext, hasTime, isDueLocal, isIsoDate, nextYearUrls, parseDateRange, sameSeries, shiftYears,
   tzOffsetMinutes, upcomingDeadlines, type Venue, type VenueDeadline, type VenueEdition,
 } from '../../src/shared/venues';
 
@@ -176,5 +176,15 @@ describe('titles', () => {
   it('prefers the acronym', () => {
     expect(editionTitle({ acronym: 'IMC', name: 'Long name' }, { year: 2026, label: '' })).toBe('IMC 2026');
     expect(editionTitle({ acronym: ' ', name: 'Computer Networks' }, { year: 2026, label: 'Special Issue on IPv6' })).toBe('Computer Networks 2026 Special Issue on IPv6');
+  });
+});
+
+describe('sameSeries', () => {
+  it('tells apart conferences that share an acronym', () => {
+    expect(sameSeries('IEEE Consumer Communications & Networking Conference', 'The IEEE Consumer Communications and Networking Conference (CCNC)')).toBe(true);
+    expect(sameSeries('International Conference on Computational Science', 'International Conference on Conceptual Structures')).toBe(false);
+    expect(sameSeries('IEEE International Conference on Communications', 'International Conference on Computer Communications')).toBe(true);
+    expect(sameSeries('Internet Measurement Conference', 'ACM IMC')).toBe(false);
+    expect(sameSeries('International Conference', 'Anything at all')).toBe(true);
   });
 });

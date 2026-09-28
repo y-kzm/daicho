@@ -109,13 +109,16 @@ function Body({ target, onClose }: { target: EditionTarget; onClose: () => void 
   const submit = async (ev: FormEvent) => {
     ev.preventDefault();
     if (busy) return;
-    if (journal && !f.label.trim()) { toast('特集号の名前を入力してください', true); return; }
+    // 以前に名前なしで登録したものは、そのまま保存できるようにする
+    if (journal && !saved && !f.label.trim()) { toast('特集号の名前を入力してください', true); return; }
     const deadlines = f.deadlines.filter((d) => d.dueLocal.trim());
     // 何も変えずに保存した場合は、取得元を保つ (公開データでの更新を止めない)。
     // 変更して保存した内容は手で直したものとして扱い、公開データの再取り込みで上書きしない
     const unchanged = saved !== null && JSON.stringify(f) === first;
     const input: EditionInput = {
       ...f, source: unchanged ? f.source : 'manual',
+      // 論文誌には開催日が無いので、「開催日は予想」は付けない
+      estimated: journal ? false : f.estimated,
       deadlines: deadlines.map((d) => ({
         ...d, dueLocal: d.dueLocal.trim().replace('T', ' '), source: unchanged || d.source === 'ai' ? d.source : 'manual',
       })),
@@ -139,7 +142,7 @@ function Body({ target, onClose }: { target: EditionTarget; onClose: () => void 
           <input name="year" type="number" min={1950} max={2100} required value={f.year} onChange={(ev) => set('year', Number(ev.target.value))} />
         </label>
         <label className="field">{journal ? '特集号の名前' : '名前 (併設の回など。通常は空)'}
-          <input name="label" value={f.label} required={journal} placeholder={journal ? '例: Special Issue on Network Measurement' : ''}
+          <input name="label" value={f.label} required={journal && !saved} placeholder={journal ? '例: Special Issue on Network Measurement' : ''}
             onChange={(ev) => set('label', ev.target.value)} />
         </label>
 

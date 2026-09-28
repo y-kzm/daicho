@@ -1,5 +1,5 @@
 import {
-  VENUES_MAX, type DeadlineInput, type DeadlineKind, type EditionInput, type Venue, type VenueDeadline, type VenueEdition,
+  sameSeries, VENUES_MAX, type DeadlineInput, type DeadlineKind, type EditionInput, type Venue, type VenueDeadline, type VenueEdition,
   type VenueImport, type VenueInput, type VenueKind, type VenueSource,
 } from '../../shared/venues';
 import { AppError, notFound } from '../errors';
@@ -161,6 +161,28 @@ export async function deleteEdition(db: D1Database, id: number): Promise<void> {
   if (r.meta.changes === 0) throw notFound('開催');
 }
 
+/**
+ * 取り込み先の会議を探す。WikiCFP は略称が識別子なので、略称が同じ別の会議 (ICCS など) と混ざらないように、
+ * 名前が大きく違うものは別の会議として登録する (識別子に連番を付ける)。
+ */
+async function findImported(db: D1Database, v: VenueInput): Promise<{ found: { id: number } | null; venue: VenueInput }> {
+  if (v.source !== 'wikicfp') {
+    const found = await db.prepare('SELECT id FROM venues WHERE source = ? AND source_key = ?').bind(v.source, v.sourceKey).first<{ id: number }>();
+    return { found, venue: v };
+  }
+  const rows = (await db
+    .prepare("SELECT id, name, source_key FROM venues WHERE source = ? AND (source_key = ? OR source_key LIKE ? ESCAPE '!')")
+    .bind(v.source, v.sourceKey, `${v.sourceKey.replace(/[!%_]/g, '!$&')}#%`)
+    .all<{ id: number; name: string; source_key: string }>()).results;
+  const same = rows.find((r) => sameSeries(r.name, v.name));
+  if (same) return { found: { id: same.id }, venue: v };
+  if (!rows.length) return { found: null, venue: v };
+  const used = new Set(rows.map((r) => r.source_key));
+  let n = 2;
+  while (used.has(`${v.sourceKey}#${n}`)) n++;
+  return { found: null, venue: { ...v, sourceKey: `${v.sourceKey}#${n}` } };
+}
+
 export interface ImportSummary { venueId: number; created: boolean; added: number; updated: number; kept: number }
 
 /**
@@ -169,11 +191,8 @@ export interface ImportSummary { venueId: number; created: boolean; added: numbe
  * 保存し直した開催 (手で直したもの、AI の候補を反映したもの) は source = manual になり、そのまま残す。
  */
 export async function importVenue(db: D1Database, data: VenueImport, now: string): Promise<ImportSummary> {
-  const found = await db
-    .prepare('SELECT id FROM venues WHERE source = ? AND source_key = ?')
-    .bind(data.venue.source, data.venue.sourceKey)
-    .first<{ id: number }>();
-  const venueId = found ? found.id : await insertVenue(db, data.venue, now);
+  const { found, venue } = await findImported(db, data.venue);
+  const venueId = found ? found.id : await insertVenue(db, venue, now);
   const summary: ImportSummary = { venueId, created: !found, added: 0, updated: 0, kept: 0 };
   if (found) {
     // 名前・略称・順位などは公開データに合わせる。メモと、利用者が入れた分野・IF は残す
