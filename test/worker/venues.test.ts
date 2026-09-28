@@ -136,6 +136,66 @@ describe('POST /api/venues/import', () => {
     expect(r.json.venues[0]!.editions[0]).toMatchObject({ place: 'Madrid', note: 'kept' });
   });
 
+  it('attaches each set of deadlines to its own edition when several are new', async () => {
+    const a = editionInput({ year: 2026, deadlines: [{ kind: 'paper', label: 'A', dueLocal: '2026-01-01', timezone: 'AoE', estimated: false, source: 'manual' }] });
+    const b = editionInput({ year: 2027, deadlines: [
+      { kind: 'abstract', label: 'B1', dueLocal: '2027-01-01', timezone: 'AoE', estimated: false, source: 'manual' },
+      { kind: 'paper', label: 'B2', dueLocal: '2027-01-08', timezone: 'AoE', estimated: false, source: 'manual' },
+    ] });
+    const c = editionInput({ year: 2028, deadlines: [{ kind: 'paper', label: 'C', dueLocal: '2028-01-01', timezone: 'AoE', estimated: false, source: 'manual' }] });
+    const r = await call<Data>('POST', '/api/venues/import', imported([a, b, c]));
+    expect(r.json.venues[0]!.editions.map((e) => [e.year, e.deadlines.map((d) => d.label)])).toEqual([[2028, ['C']], [2027, ['B1', 'B2']], [2026, ['A']]]);
+  });
+
+  it('replaces an estimate that was never edited once the real dates are published', async () => {
+    await call<Data>('POST', '/api/venues/import', imported([editionInput()]));
+    const vid = (await load()).venues[0]!.id;
+    mockFetch([{ match: /.*/, status: 404, body: '' }]);
+    const next = await call<Data>('POST', `/api/venues/${vid}/editions/next`, {});
+    expect(next.json.venues[0]!.editions[0]).toMatchObject({ year: 2027, source: 'estimate', estimated: true });
+    const real = editionInput({ year: 2027, place: 'Atlanta', startDate: '2027-10-25', endDate: '2027-10-29', dateText: 'Oct 25-29, 2027', deadlines: [
+      { kind: 'paper', label: '', dueLocal: '2027-05-12 23:59', timezone: 'AoE', estimated: false, source: 'manual' },
+    ] });
+    const r = await call<Data>('POST', '/api/venues/import', imported([editionInput(), real]));
+    expect(r.json.summary).toMatchObject({ added: 0, updated: 2, kept: 0 });
+    const e = r.json.venues[0]!.editions[0]!;
+    expect(e).toMatchObject({ year: 2027, place: 'Atlanta', estimated: false, source: 'ccfddl', startDate: '2027-10-25' });
+    expect(e.deadlines.map((d) => [d.dueLocal, d.estimated, d.source])).toEqual([['2027-05-12 23:59', false, 'ccfddl']]);
+  });
+
+  it('keeps an estimate that the user has corrected', async () => {
+    await call<Data>('POST', '/api/venues/import', imported([editionInput()]));
+    const vid = (await load()).venues[0]!.id;
+    mockFetch([{ match: /.*/, status: 404, body: '' }]);
+    const id = (await call<Data>('POST', `/api/venues/${vid}/editions/next`, {})).json.id!;
+    await call('PUT', `/api/venues/editions/${id}`, editionInput({ year: 2027, place: 'Checked by me', source: 'manual', deadlines: [] }));
+    const r = await call<Data>('POST', '/api/venues/import', imported([editionInput({ year: 2027, place: 'From data' })]));
+    expect(r.json.summary).toMatchObject({ kept: 1, updated: 0 });
+    expect(r.json.venues[0]!.editions[0]!.place).toBe('Checked by me');
+  });
+
+  it('decides the source of imported editions on the server', async () => {
+    const body = { venue: venueInput({ source: 'ccfddl', sourceKey: 'NW/imc' }), editions: [
+      editionInput({ source: 'manual' }), { ...editionInput({ year: 2027 }), source: undefined }, editionInput({ year: 2028, source: 'ai' }),
+    ] };
+    const r = await call<Data>('POST', '/api/venues/import', body);
+    expect(r.json.venues[0]!.editions.map((e) => e.source)).toEqual(['ccfddl', 'ccfddl', 'ccfddl']);
+    expect(r.json.venues[0]!.editions.flatMap((e) => e.deadlines.map((d) => d.source))).toEqual(Array(6).fill('ccfddl'));
+    const again = await call<Data>('POST', '/api/venues/import', body);
+    expect(again.json.summary).toMatchObject({ added: 0, updated: 3, kept: 0 });
+  });
+
+  it('does not let an edit change where a venue came from', async () => {
+    await call<Data>('POST', '/api/venues/import', imported([editionInput()]));
+    const v = (await load()).venues[0]!;
+    await call('PUT', `/api/venues/${v.id}`, venueInput({ source: 'manual', sourceKey: '', note: 'edited' }));
+    expect((await load()).venues[0]).toMatchObject({ source: 'ccfddl', sourceKey: 'NW/imc', note: 'edited' });
+    const other = (await call<Data>('POST', '/api/venues', venueInput({ acronym: 'NSDI', name: 'NSDI' }))).json.id!;
+    expect((await call('PUT', `/api/venues/${other}`, venueInput({ acronym: 'NSDI', name: 'NSDI', source: 'ccfddl', sourceKey: 'NW/imc' }))).status).toBe(200);
+    expect((await load()).venues.map((x) => [x.acronym, x.source, x.sourceKey])).toEqual([['IMC', 'ccfddl', 'NW/imc'], ['NSDI', 'manual', '']]);
+    expect((await call<Data>('POST', '/api/venues/import', imported([editionInput()]))).json.venues).toHaveLength(2);
+  });
+
   it('rejects manual sources, duplicate years and malformed data', async () => {
     expect((await call('POST', '/api/venues/import', { venue: venueInput(), editions: [] })).status).toBe(400);
     expect((await call('POST', '/api/venues/import', { venue: venueInput({ source: 'ccfddl' }), editions: [] })).status).toBe(400);
@@ -163,7 +223,7 @@ describe('next year', () => {
     mockFetch([{ match: 'imc/2027', body: '<html>Welcome to IMC 2026. The next edition will be announced.</html>'.replace('2027', '') }]);
     const soft = await call<Data>('POST', `/api/venues/${vid}/editions/next`, {});
     expect(soft.json.site!.siteUrl).toBe('');
-    expect(soft.json.venues[0]!.editions[0]).toMatchObject({ year: 2027, siteUrl: '', estimated: true });
+    expect(soft.json.venues[0]!.editions[0]).toMatchObject({ year: 2027, siteUrl: '', estimated: true, source: 'estimate' });
     mockFetch([{ match: /.*/, status: 404, body: '' }]);
     const next = await call<Data>('POST', `/api/venues/${vid}/editions/next`, {});
     expect(next.json.venues[0]!.editions[0]).toMatchObject({ year: 2028, siteUrl: '' });
@@ -198,6 +258,7 @@ describe('calendar', () => {
     const body = await ok.text();
     expect(body.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true);
     expect(body).toContain('SUMMARY:IMC 2026 開催');
+    expect((await app.request(`/cal/${token}`, {}, env)).status).toBe(200);
     for (const bad of ['0'.repeat(48), token.slice(0, 47), token + '0', 'x', token.toUpperCase()]) {
       expect((await app.request(`/cal/${bad}.ics`, {}, env)).status, bad).toBe(404);
     }

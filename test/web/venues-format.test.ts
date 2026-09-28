@@ -33,6 +33,11 @@ describe('entriesOf', () => {
     expect(entriesOf({ acronym: 'IMC', name: 'ACM Internet Measurement Conference' }, es).map((e) => e.id)).toEqual([1, 2, 3]);
     expect(entriesOf({ acronym: 'ToN', name: 'IEEE/ACM Transactions on Networking' }, es).map((e) => e.id)).toEqual([5]);
   });
+  it('does not match inside a longer word, also when only the acronym is known', () => {
+    const list = [entry({ id: 1, conference: 'ASPLOS' }), entry({ id: 2, conference: 'IEEE SP 2024' }), entry({ id: 3, conference: 'IMCOM' })];
+    expect(entriesOf({ acronym: 'SP', name: 'SP' }, list).map((e) => e.id)).toEqual([2]);
+    expect(entriesOf({ acronym: 'IMC', name: 'IMC' }, list)).toEqual([]);
+  });
   it('does not match on a one-letter acronym or on nothing', () => {
     expect(entriesOf({ acronym: 'A', name: '' }, [entry({ id: 1, conference: 'A B C' })])).toEqual([]);
     expect(entriesOf({ acronym: '', name: '' }, es)).toEqual([]);

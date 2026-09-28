@@ -62,6 +62,11 @@ function Body({ onClose }: Props) {
               <input readOnly aria-label="購読用の URL" value={url} onFocus={(ev) => ev.currentTarget.select()} />
               <button type="button" className="sbtn" onClick={() => void copy()}>コピー</button>
             </div>
+            {!/^https:\/\//.test(url) || /\.workers\.dev$/.test(window.location.hostname) ? (
+              <p className="vn-dialog-note" role="note">
+                この URL は、今開いているアドレス ({window.location.host}) のものです。ふだん使うアドレスで開いてから、コピーしてください。
+              </p>
+            ) : null}
             <ol className="vn-steps">
               <li>Google カレンダーを開き、左の「他のカレンダー」の ＋ を押す</li>
               <li>「URL で追加」を選び、上の URL を貼り付ける</li>

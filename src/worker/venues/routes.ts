@@ -92,7 +92,7 @@ venues.post('/:id/editions/next', async (c) => {
   const next = estimateNext(latest, latest.year + 1);
   const id = await insertEdition(c.env.DB, venue.id, next);
   const fresh = await getEdition(c.env.DB, id);
-  const found = await findSite(httpFor(c.env), fresh.venue, fresh.edition);
+  const found = await findSite(fresh.venue, fresh.edition);
   if (found.siteUrl) await updateEdition(c.env.DB, id, { ...next, siteUrl: found.siteUrl });
   return c.json({ ...(await data(c.env.DB)), id, site: found });
 });
@@ -110,7 +110,7 @@ venues.delete('/editions/:id', async (c) => {
 // その年のサイトを探す (保存はしない。見つかった URL を画面が入力欄に入れる)
 venues.post('/editions/:id/find-site', async (c) => {
   const { venue, edition } = await getEdition(c.env.DB, idOf(c));
-  return c.json(await findSite(httpFor(c.env), venue, edition));
+  return c.json(await findSite(venue, edition));
 });
 
 // サイトから日程の候補を読み取る (保存はしない)
@@ -138,8 +138,10 @@ function sameToken(a: string, b: string): boolean {
 /** GET /cal/<token>.ics。トークンが合わなければ、存在しないものとして 404 を返す */
 export async function publicCalendar(c: Context<{ Bindings: Env }>): Promise<Response> {
   const given = (c.req.param('file') ?? '').replace(/\.ics$/i, '');
+  // 形の違うものは、データベースを読む前に断る
+  if (!/^[0-9a-f]{48}$/.test(given)) return c.text('Not found', 404);
   const token = await getCalendarToken(c.env.DB);
-  if (!token || !/^[0-9a-f]{48}$/.test(given) || !sameToken(given, token)) return c.text('Not found', 404);
+  if (!token || !sameToken(given, token)) return c.text('Not found', 404);
   const body = calendarBody(await loadVenues(c.env.DB), c.req.query('estimated') !== '0');
   return new Response(body, { headers: { ...ICS_HEADERS, 'x-robots-tag': 'noindex' } });
 }

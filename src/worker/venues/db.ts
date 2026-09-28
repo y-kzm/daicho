@@ -85,9 +85,11 @@ export async function insertVenue(db: D1Database, v: VenueInput, now: string): P
   return r.id;
 }
 
+/** 取得元と識別子は変えない (公開データとの対応が切れたり、別の会議と重なったりするのを防ぐ) */
 export async function updateVenue(db: D1Database, id: number, v: VenueInput): Promise<void> {
-  const sets = VENUE_COLS.split(', ').map((c) => `${c} = ?`).join(', ');
-  const r = await db.prepare(`UPDATE venues SET ${sets} WHERE id = ?`).bind(...venueValues(v), id).run();
+  const cols = VENUE_COLS.split(', ').filter((c) => c !== 'source' && c !== 'source_key');
+  const sets = cols.map((c) => `${c} = ?`).join(', ');
+  const r = await db.prepare(`UPDATE venues SET ${sets} WHERE id = ?`).bind(...venueValues(v).slice(0, cols.length), id).run();
   if (r.meta.changes === 0) throw notFound('会議・論文誌');
 }
 
@@ -163,8 +165,8 @@ export interface ImportSummary { venueId: number; created: boolean; added: numbe
 
 /**
  * 公開データを取り込む。取得元と識別子が同じ会議があれば、それを更新する。
- * 開催は、取得元が公開データのまま (= 手で直していない) のものだけを置き換える。
- * 手で直した開催 (source = manual) と、AI の候補を反映した開催は、そのまま残す。
+ * 開催は、取得元が公開データのまま、または予想で作ったままのものだけを置き換える。
+ * 保存し直した開催 (手で直したもの、AI の候補を反映したもの) は source = manual になり、そのまま残す。
  */
 export async function importVenue(db: D1Database, data: VenueImport, now: string): Promise<ImportSummary> {
   const found = await db
@@ -192,7 +194,8 @@ export async function importVenue(db: D1Database, data: VenueImport, now: string
         ...deadlineStatements(db, NEW_EDITION, e.deadlines),
       );
       summary.added++;
-    } else if (old.source === data.venue.source) {
+    } else if (old.source === data.venue.source || old.source === 'estimate') {
+      // 公開データのままの開催と、予想で作ったままの開催は、公開データの内容で置き換える
       const sets = EDITION_COLS.split(', ').filter((c) => c !== 'note').map((c) => `${c} = ?`).join(', ');
       const values = editionValues(e).slice(0, -1);
       stmts.push(

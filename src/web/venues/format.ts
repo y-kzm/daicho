@@ -49,7 +49,8 @@ export function entriesOf(venue: Pick<Venue, 'acronym' | 'name'>, entries: reado
   return entries.filter((e) => {
     const v = norm(`${e.conference} ${e.journal}`);
     if (!v) return false;
-    if (name && (v === name || v.includes(name))) return true;
-    return acr.length >= 2 && ` ${v} `.includes(` ${acr} `);
+    // 語の途中の一致は数えない (SP が ASPLOS に、IMC が IMCOM に一致しないように)
+    const has = (w: string): boolean => w.length >= 2 && ` ${v} `.includes(` ${w} `);
+    return has(name) || has(acr);
   });
 }

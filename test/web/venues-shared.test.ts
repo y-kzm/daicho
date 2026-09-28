@@ -89,7 +89,8 @@ describe('parseDateRange', () => {
     expect(parseDateRange('August 12th-14th, 2026')).toEqual({ start: '2026-08-12', end: '2026-08-14' });
   });
   it('handles a range across the new year and a missing year', () => {
-    expect(parseDateRange('Dec 30 - Jan 2, 2026')).toEqual({ start: '2026-12-30', end: '2027-01-02' });
+    expect(parseDateRange('Dec 30 - Jan 2, 2026')).toEqual({ start: '2025-12-30', end: '2026-01-02' });
+    expect(parseDateRange('Dec 30 - Jan 2', 2027)).toEqual({ start: '2027-12-30', end: '2028-01-02' });
     expect(parseDateRange('Oct 12-16', 2026)).toEqual({ start: '2026-10-12', end: '2026-10-16' });
     expect(parseDateRange('Oct 12-16')).toBeNull();
   });
@@ -133,10 +134,10 @@ describe('estimateNext', () => {
     });
     expect(estimateNext(prev, 2027)).toEqual({
       year: 2027, label: '', siteUrl: '', place: '', dateText: '', startDate: '2027-10-12', endDate: '2027-10-16',
-      estimated: true, source: 'manual', note: '',
+      estimated: true, source: 'estimate', note: '',
       deadlines: [
-        { kind: 'paper', label: 'Cycle 1', dueLocal: '2026-11-20 23:59', timezone: 'AoE', estimated: true, source: 'manual' },
-        { kind: 'abstract', label: '', dueLocal: '2027-04-22', timezone: 'AoE', estimated: true, source: 'manual' },
+        { kind: 'paper', label: 'Cycle 1', dueLocal: '2026-11-20 23:59', timezone: 'AoE', estimated: true, source: 'estimate' },
+        { kind: 'abstract', label: '', dueLocal: '2027-04-22', timezone: 'AoE', estimated: true, source: 'estimate' },
       ],
     });
   });

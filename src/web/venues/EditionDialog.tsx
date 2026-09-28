@@ -44,6 +44,7 @@ function Body({ target, onClose }: { target: EditionTarget; onClose: () => void 
   const { apply } = useVenues();
   const toast = useToast();
   const [f, setF] = useState<EditionInput>(() => initial(target));
+  const [first] = useState(() => JSON.stringify(initial(target)));
   const [busy, setBusy] = useState<'' | 'save' | 'site' | 'ai'>('');
   const [provider, setProvider] = useState<LlmProvider>('claude');
   const [found, setFound] = useState<ExtractedEdition | null>(null);
@@ -105,10 +106,14 @@ function Body({ target, onClose }: { target: EditionTarget; onClose: () => void 
     ev.preventDefault();
     if (busy) return;
     const deadlines = f.deadlines.filter((d) => d.dueLocal.trim());
-    // 手で保存した内容は、公開データの再取り込みで上書きしない
+    // 何も変えずに保存した場合は、取得元を保つ (公開データでの更新を止めない)。
+    // 変更して保存した内容は手で直したものとして扱い、公開データの再取り込みで上書きしない
+    const unchanged = saved !== null && JSON.stringify(f) === first;
     const input: EditionInput = {
-      ...f, source: 'manual',
-      deadlines: deadlines.map((d) => ({ ...d, dueLocal: d.dueLocal.trim().replace('T', ' '), source: d.source === 'ai' ? 'ai' : 'manual' })),
+      ...f, source: unchanged ? f.source : 'manual',
+      deadlines: deadlines.map((d) => ({
+        ...d, dueLocal: d.dueLocal.trim().replace('T', ' '), source: unchanged || d.source === 'ai' ? d.source : 'manual',
+      })),
     };
     setBusy('save');
     try {
@@ -228,6 +233,12 @@ function Body({ target, onClose }: { target: EditionTarget; onClose: () => void 
           <textarea name="note" value={f.note} onChange={(ev) => set('note', ev.target.value)} />
         </label>
       </div>
+      {saved && saved.source !== 'manual' && (
+        <p className="vn-dialog-note" role="note">
+          {saved.source === 'estimate' ? 'この開催は、前の年から予想で作ったものです。' : 'この開催は、公開データから取り込んだものです。'}
+          内容を変えて保存すると、以後は公開データでは更新されなくなります。
+        </p>
+      )}
       <div className="dialog-actions">
         <button type="button" className="cancel" onClick={onClose}>キャンセル</button>
         <button type="submit" className="submit" disabled={busy !== ''}>保存する</button>

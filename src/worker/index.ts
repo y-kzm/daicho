@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
+import { accessGuard } from './access';
 import type { Env } from './env';
 import { AppError } from './errors';
 import attachments from './routes/attachments';
@@ -23,6 +24,7 @@ export function createApp(): App {
   const app: App = new Hono();
   const api: App = new Hono();
 
+  api.use('*', accessGuard);
   api.use('*', sameOriginOnly);
   api.get('/health', (c) => c.json({ ok: true }));
   api.route('/data', data);

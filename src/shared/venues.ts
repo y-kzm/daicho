@@ -10,7 +10,11 @@ export const DEADLINE_LABELS: Record<DeadlineKind, string> = {
   abstract: 'アブストラクト締切', paper: '論文締切', notification: '採否通知', camera: 'カメラレディ', other: 'その他',
 };
 
-export const VENUE_SOURCES = ['manual', 'ccfddl', 'ai'] as const;
+/**
+ * 取得元。manual = 手で入力・修正した、ccfddl = 公開データ、ai = AI の候補を反映した、
+ * estimate = 前の年から予想で作ったまま (公開データに実際の日付が出たら置き換える)
+ */
+export const VENUE_SOURCES = ['manual', 'ccfddl', 'ai', 'estimate'] as const;
 export type VenueSource = (typeof VENUE_SOURCES)[number];
 
 export const VENUES_MAX = 200;
@@ -175,7 +179,8 @@ const iso = (y: number, m: number, d: number): string => `${y}-${pad(m)}-${pad(d
 export function parseDateRange(text: string, fallbackYear?: number): { start: string; end: string } | null {
   const s = text.replace(/[–—−]/g, '-').replace(/\s+/g, ' ').trim();
   if (!s) return null;
-  const year = Number(s.match(/\b(19|20)\d{2}\b/)?.[0] ?? fallbackYear ?? NaN);
+  const written = s.match(/\b(19|20)\d{2}\b/)?.[0];
+  const year = Number(written ?? fallbackYear ?? NaN);
   if (!Number.isInteger(year)) return null;
   const body = s.replace(/,?\s*\b(19|20)\d{2}\b/, '').trim();
   // 月 日 - 月 日
@@ -183,9 +188,10 @@ export function parseDateRange(text: string, fallbackYear?: number): { start: st
   if (m) {
     const [m1, m2] = [monthOf(m[1]!), monthOf(m[3]!)];
     if (!m1 || !m2) return null;
-    const start = iso(year, m1, Number(m[2]));
-    // 年をまたぐ開催 (12 月 - 1 月)
-    const end = iso(m2 < m1 ? year + 1 : year, m2, Number(m[4]));
+    // 年をまたぐ開催 (12 月 - 1 月)。書かれている年は終わりの日のもの。年が書かれていない場合は、開催の年を始まりの年とする
+    const crosses = m2 < m1;
+    const start = iso(crosses && written ? year - 1 : year, m1, Number(m[2]));
+    const end = iso(crosses && !written ? year + 1 : year, m2, Number(m[4]));
     return isIsoDate(start) && isIsoDate(end) ? { start, end } : null;
   }
   // 月 日 - 日
@@ -246,9 +252,9 @@ export function estimateNext(prev: VenueEdition, toYear: number): EditionInput {
   return {
     year: toYear, label: prev.label, siteUrl: '', place: '', dateText: '',
     startDate: shift(prev.startDate), endDate: shift(prev.endDate),
-    estimated: true, source: 'manual', note: '',
+    estimated: true, source: 'estimate', note: '',
     deadlines: prev.deadlines.map((d) => ({
-      kind: d.kind, label: d.label, dueLocal: shiftYears(d.dueLocal, by), timezone: d.timezone, estimated: true, source: 'manual',
+      kind: d.kind, label: d.label, dueLocal: shiftYears(d.dueLocal, by), timezone: d.timezone, estimated: true, source: 'estimate',
     })),
   };
 }

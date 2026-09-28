@@ -4,7 +4,7 @@ const pad = (n: number): string => String(n).padStart(2, '0');
 
 /** 文字列の値に使えない文字を置き換える (RFC 5545 3.3.11) */
 export function icsText(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r\n|\r|\n/g, '\\n');
 }
 
 /** 1 行を 75 オクテット以下に折り返す。UTF-8 の文字の途中では切らない */
@@ -59,7 +59,8 @@ function event(e: Event, stamp: string): string[] {
     `SUMMARY:${icsText(e.summary)}`,
     ...(e.description ? [`DESCRIPTION:${icsText(e.description)}`] : []),
     ...(e.location ? [`LOCATION:${icsText(e.location)}`] : []),
-    ...(e.url ? [`URL:${icsText(e.url)}`] : []),
+    // URL の値は文字列ではなく URI なので、文字の置き換えはしない。空白や改行を含むものは出さない
+    ...(/^https?:\/\/[^\s]+$/i.test(e.url) ? [`URL:${e.url}`] : []),
     'TRANSP:TRANSPARENT',
     'END:VEVENT',
   ];

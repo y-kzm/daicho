@@ -7,23 +7,65 @@ import type { Env } from '../env';
 import { AppError } from '../errors';
 import type { Http } from '../services/http';
 import { llmGenerate, parseJsonLoose, providerLabel } from '../services/llm';
+import { fetchPage } from './fetch-page';
 
-const PAGE_MAX = 400_000;
+const PAGE_MAX = 300_000;
 const TEXT_MAX = 7000;
 const WINDOW = 700;
 const KEYWORDS = /deadline|submission|important dates|call for papers|notification|camera[- ]ready|abstract|registration due|締切|投稿/gi;
 
-/** HTML から本文を取り出す。script と style を除き、タグを空白にして、空白をまとめる */
+const BLOCKS = new Set(['p', 'div', 'li', 'tr', 'td', 'th', 'dt', 'dd', 'br', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'section', 'article', 'ul', 'ol', 'table']);
+const SKIPPED = ['script', 'style', 'noscript', 'svg', 'template'];
+const ENTITIES: Record<string, string> = { nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+
+function decodeEntities(s: string): string {
+  return s.replace(/&(#x?[0-9a-f]{1,8}|[a-z]{2,6});/gi, (whole, name: string) => {
+    if (name[0] !== '#') return ENTITIES[name.toLowerCase()] ?? whole;
+    const n = name[1] === 'x' || name[1] === 'X' ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10);
+    // 範囲外の番号は String.fromCodePoint が例外を出すので、空白にする
+    return n > 0 && n <= 0x10ffff && !(n >= 0xd800 && n <= 0xdfff) ? String.fromCodePoint(n) : ' ';
+  });
+}
+
+/**
+ * HTML から本文を取り出す。script や style の中身とコメントを除き、タグを空白か改行にする。
+ * 文字列を先頭から 1 回だけ進む (閉じていないタグが大量にあるページでも、処理時間が入力の長さに比例する)。
+ */
 export function htmlToText(html: string): string {
-  return html
-    .slice(0, PAGE_MAX)
-    .replace(/<(script|style|noscript|svg)\b[\s\S]*?<\/\1>/gi, ' ')
-    .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(/<\/(p|div|li|tr|h[1-6]|td|th|br|dt|dd)>|<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&#0?39;|&apos;/gi, "'").replace(/&quot;/gi, '"')
-    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n) || 32))
-    .replace(/[ \t\f\v]+/g, ' ')
+  const src = html.length > PAGE_MAX ? html.slice(0, PAGE_MAX) : html;
+  const out: string[] = [];
+  let i = 0;
+  while (i < src.length) {
+    const lt = src.indexOf('<', i);
+    if (lt === -1) { out.push(src.slice(i)); break; }
+    if (lt > i) out.push(src.slice(i, lt));
+    if (src.startsWith('<!--', lt)) {
+      const end = src.indexOf('-->', lt + 4);
+      if (end === -1) break; // 閉じていないコメント。以降は本文として扱わない
+      i = end + 3;
+      continue;
+    }
+    const gt = src.indexOf('>', lt + 1);
+    if (gt === -1) break; // 閉じていないタグ
+    // 小文字にした文字列の位置は使わない (小文字にすると長さが変わる文字があり、位置がずれる)
+    const name = (src.slice(lt + 1, Math.min(gt, lt + 40)).match(/^\/?([a-z][a-z0-9]*)/i)?.[1] ?? '').toLowerCase();
+    const closing = src[lt + 1] === '/';
+    if (!closing && SKIPPED.includes(name)) {
+      const re = new RegExp('</' + name, 'gi');
+      re.lastIndex = gt + 1;
+      const end = re.exec(src)?.index ?? -1;
+      if (end === -1) break; // 閉じていない script など
+      const close = src.indexOf('>', end);
+      if (close === -1) break;
+      i = close + 1;
+      out.push(' ');
+      continue;
+    }
+    out.push(BLOCKS.has(name) ? '\n' : ' ');
+    i = gt + 1;
+  }
+  return decodeEntities(out.join(''))
+    .replace(/[ \t\f\v\r\u00a0]+/g, ' ')
     .replace(/ ?\n[ \n]*/g, '\n')
     .trim();
 }
@@ -109,7 +151,7 @@ export function parseExtracted(raw: unknown, year: number): Pick<ExtractedEditio
 export async function extractEdition(
   http: Http, env: Env, provider: LlmProvider | undefined, target: { title: string; year: number; pageUrl: string },
 ): Promise<ExtractedEdition> {
-  const page = await http.get(target.pageUrl);
+  const page = await fetchPage(target.pageUrl);
   if (page.status !== 200 || !page.text.trim()) throw new AppError('サイトを取得できませんでした。URL を確認してください。', 502);
   const text = relevantText(htmlToText(page.text));
   if (text.length < 40) throw new AppError('サイトから本文を読み取れませんでした。画面の表示に JavaScript が必要なサイトかもしれません。', 422);

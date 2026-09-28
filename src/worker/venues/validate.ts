@@ -101,10 +101,13 @@ export function parseEditionInput(body: unknown): EditionInput {
 export function parseVenueImport(body: unknown): VenueImport {
   const b = obj(body);
   const venue = parseVenueInput(b.venue);
-  if (venue.source === 'manual' || !venue.sourceKey) throw new AppError('取り込むデータの取得元が不正です。');
+  if (venue.source !== 'ccfddl' || !venue.sourceKey) throw new AppError('取り込むデータの取得元が不正です。');
   if (!Array.isArray(b.editions)) throw new AppError('取り込むデータが不正です。');
   if (b.editions.length > EDITIONS_MAX) throw new AppError(`一度に取り込める開催は ${EDITIONS_MAX} 件までです。`);
-  const editions = b.editions.map(parseEditionInput);
+  // 取得元は、画面から送られた値を使わず、会議の取得元にそろえる (次の取り込みで更新できるように)
+  const editions = b.editions.map(parseEditionInput).map((e) => ({
+    ...e, source: venue.source, deadlines: e.deadlines.map((d) => ({ ...d, source: venue.source })),
+  }));
   const seen = new Set<string>();
   for (const e of editions) {
     const key = `${e.year}\u0000${e.label}`;
