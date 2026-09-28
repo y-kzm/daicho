@@ -20,7 +20,7 @@ const deadlineName = (u: UpcomingDeadline): string =>
 
 /** 国際会議・論文誌を開いているときのサイドバー。近い締切と、追跡しているものの一覧を出す */
 export function VenuesSide({ kind }: { kind: VenueKind }) {
-  const { data, selectedId, select } = useVenueStore();
+  const { data, error, selectedId, select } = useVenueStore();
   const venues = useMemo(() => (data?.venues ?? []).filter((v) => v.kind === kind), [data, kind]);
   const now = useMemo(() => new Date(), [data]);
   const upcoming = useMemo(() => upcomingDeadlines(venues, now), [venues, now]);
@@ -47,7 +47,7 @@ export function VenuesSide({ kind }: { kind: VenueKind }) {
     );
   };
 
-  if (!data) return <div className="side-note side-ledger-note">読み込んでいます…</div>;
+  if (!data) return <div className="side-note side-ledger-note">{error ? '読み込めませんでした。右の「再読み込み」を押してください。' : '読み込んでいます…'}</div>;
   return (
     <>
       {upcoming.length > 0 && (
