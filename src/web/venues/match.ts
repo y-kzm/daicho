@@ -54,7 +54,7 @@ export const isVenueName = (s: string): boolean => !NOT_VENUE.test(s);
 
 /**
  * 会議・論文誌と、論文に書かれた名前を照合する関数を作る。
- * - 正式名は、語の並びとして含むものを一致とする。1 語だけの名前 (Nature) は、名前全体が一致するものに限る (Nature Communications は別の論文誌)
+ * - 正式名は、語の並びとして含むものを一致とする。主催者を除いた名前は、名前全体が一致するものに限る。1 語だけの名前 (Nature) は、名前全体が一致するものに限る (Nature Communications は別の論文誌)
  * - 略称は、語として含むものを一致とする (SP が ASPLOS に一致しないように)
  * - 略称が普通の語でもある場合 (CLOUD、Networking) は、表記が大文字で一致するか、名前全体が一致するものに限る
  */
@@ -63,16 +63,18 @@ export function matcher(v: Named): (t: VenueText) => boolean {
   const acrLow = norm(acr);
   const name = norm(v.name);
   const nameCore = core(v.name);
-  const phrases = name.length >= 2 && name !== acrLow
-    ? [...new Set([name, nameCore])].filter((n) => n.includes(' ')).map((n) => ` ${n} `)
-    : [];
+  const named = name.length >= 2 && name !== acrLow;
+  const phrase = named && name.includes(' ') ? ` ${name} ` : '';
+  // 主催者を除いた名前は、名前全体が一致する場合だけ一致とする (Security Symposium が NDSS の名前の途中に一致しないように)
+  const lead = named && nameCore !== name && nameCore.includes(' ') ? nameCore : '';
   const oneWord = name.length >= 2 && name !== acrLow && !nameCore.includes(' ') ? nameCore : '';
   const exact = acr.length >= 2 ? words(acr) : '';
   // 略称が正式名の中に語として出てくるなら、頭文字を並べたものではなく普通の語 (Cloud Computing の CLOUD)
   const wordy = ` ${name} `.includes(` ${acrLow} `) && name !== acrLow;
   const capitals = (acr.match(/[A-Z]/g) ?? []).length >= 2;
   return (t) => {
-    if (phrases.some((p) => t.low.includes(p))) return true;
+    if (phrase && t.low.includes(phrase)) return true;
+    if (lead && (t.core === lead || t.core === `${lead} ${acrLow}`)) return true;
     if (oneWord && t.core === oneWord) return true;
     if (!exact) return false;
     if (t.core === acrLow && acr.length > STRICT_MAX) return true;

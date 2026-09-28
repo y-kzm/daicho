@@ -66,6 +66,14 @@ describe('entriesOf', () => {
     expect(ids({ acronym: '', name: 'Nature' }, ['Nature', 'Nature Communications', 'Nature 2021'])).toEqual([1, 3]);
     expect(ids({ acronym: 'NeurIPS', name: 'Conference on Neural Information Processing Systems' }, ['NeurIPS 2023', 'Advances in Neural Information Processing Systems', 'neurips'])).toEqual([1, 3]);
   });
+  it('does not take a conference for another one with a similar name', () => {
+    const none = (v: { acronym: string; name: string }, conference: string) => expect(entriesOf(v, [entry({ id: 1, conference })]), conference).toEqual([]);
+    none({ acronym: 'USENIX Security', name: 'USENIX Security Symposium' }, 'Network and Distributed System Security Symposium');
+    none({ acronym: 'S&P', name: 'IEEE Symposium on Security and Privacy' }, '2022 IEEE 7th European Symposium on Security and Privacy (EuroS&P)');
+    none({ acronym: 'CCS', name: 'ACM Conference on Computer and Communications Security' }, 'Proceedings of the 2021 ACM Asia Conference on Computer and Communications Security');
+    none({ acronym: 'AAAI', name: 'AAAI Conference on Artificial Intelligence' }, 'Proceedings of the Thirty-First International Joint Conference on Artificial Intelligence, IJCAI-22');
+    none({ acronym: 'INFOCOM', name: 'IEEE International Conference on Computer Communications' }, '2020 29th International Conference on Computer Communications and Networks (ICCCN)');
+  });
   it('does not match on a one-letter acronym or on nothing', () => {
     expect(entriesOf({ acronym: 'A', name: '' }, [entry({ id: 1, conference: 'A B C' })])).toEqual([]);
     expect(entriesOf({ acronym: '', name: '' }, es)).toEqual([]);
