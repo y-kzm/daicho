@@ -121,15 +121,17 @@ const GENERIC = new Set([
   'joint', 'proceedings', 'meeting', 'congress', 'th', 'st', 'nd', 'rd',
 ]);
 
-const keyWords = (name: string): Set<string> =>
-  new Set(name.toLowerCase().replace(/[^a-z]+/g, ' ').split(' ').filter((w) => w.length >= 2 && !GENERIC.has(w)));
+const wordsOf = (s: string): string[] => s.toLowerCase().replace(/[^a-z]+/g, ' ').split(' ').filter((w) => w.length >= 2);
+
+const keyWords = (name: string, skip: ReadonlySet<string>): Set<string> => new Set(wordsOf(name).filter((w) => !GENERIC.has(w) && !skip.has(w)));
 
 /**
  * 2 つの名前が、同じ会議のものらしいか。略称が同じでも別の会議がある (ICCS など) ので、名前の語の重なりで確かめる。
- * どちらかに特徴のある語が無い場合は、判断できないので同じものとして扱う。
+ * どちらかに特徴のある語が無い場合 (名前が略称だけの「NDSS Symposium」など) は、判断できないので同じものとして扱う。
  */
-export function sameSeries(a: string, b: string): boolean {
-  const [x, y] = [keyWords(a), keyWords(b)];
+export function sameSeries(a: string, b: string, acronym = ''): boolean {
+  const skip = new Set(wordsOf(acronym));
+  const [x, y] = [keyWords(a, skip), keyWords(b, skip)];
   if (!x.size || !y.size) return true;
   const shared = [...x].filter((w) => y.has(w)).length;
   return shared / Math.min(x.size, y.size) >= 0.5;

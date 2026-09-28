@@ -171,10 +171,10 @@ async function findImported(db: D1Database, v: VenueInput): Promise<{ found: { i
     return { found, venue: v };
   }
   const rows = (await db
-    .prepare("SELECT id, name, source_key FROM venues WHERE source = ? AND (source_key = ? OR source_key LIKE ? ESCAPE '!')")
+    .prepare("SELECT id, name, source_key FROM venues WHERE source = ? AND (source_key = ? OR source_key LIKE ? ESCAPE '!') ORDER BY id")
     .bind(v.source, v.sourceKey, `${v.sourceKey.replace(/[!%_]/g, '!$&')}#%`)
     .all<{ id: number; name: string; source_key: string }>()).results;
-  const same = rows.find((r) => sameSeries(r.name, v.name));
+  const same = rows.find((r) => sameSeries(r.name, v.name, v.acronym));
   if (same) return { found: { id: same.id }, venue: v };
   if (!rows.length) return { found: null, venue: v };
   const used = new Set(rows.map((r) => r.source_key));

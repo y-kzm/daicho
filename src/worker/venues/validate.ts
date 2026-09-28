@@ -111,6 +111,8 @@ export function parseVenueImport(body: unknown): VenueImport {
   const b = obj(body);
   const venue = parseVenueInput(b.venue);
   if (!(IMPORT_SOURCES as readonly string[]).includes(venue.source) || !venue.sourceKey) throw new AppError('取り込むデータの取得元が不正です。');
+  // # から後ろは、略称が同じ別の会議を分けるために Daicho が付ける
+  if (venue.sourceKey.includes('#')) throw new AppError('取り込むデータの識別子が不正です。');
   if (!Array.isArray(b.editions)) throw new AppError('取り込むデータが不正です。');
   if (b.editions.length > EDITIONS_MAX) throw new AppError(`一度に取り込める開催は ${EDITIONS_MAX} 件までです。`);
   // 取得元は、画面から送られた値を使わず、会議の取得元にそろえる (次の取り込みで更新できるように)

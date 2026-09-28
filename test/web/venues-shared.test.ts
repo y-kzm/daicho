@@ -185,6 +185,11 @@ describe('sameSeries', () => {
     expect(sameSeries('International Conference on Computational Science', 'International Conference on Conceptual Structures')).toBe(false);
     expect(sameSeries('IEEE International Conference on Communications', 'International Conference on Computer Communications')).toBe(true);
     expect(sameSeries('Internet Measurement Conference', 'ACM IMC')).toBe(false);
+    // 名前が略称だけの年は、判断できないので同じ会議として扱う
+    expect(sameSeries('Internet Measurement Conference', 'ACM IMC', 'IMC')).toBe(true);
+    expect(sameSeries('NDSS Symposium', 'Network and Distributed System Security Symposium', 'NDSS')).toBe(true);
+    expect(sameSeries('INFOCOM', 'IEEE Conference on Computer Communications', 'INFOCOM')).toBe(true);
+    expect(sameSeries('International Conference on Computational Science (ICCS)', 'International Conference on Conceptual Structures', 'ICCS')).toBe(false);
     expect(sameSeries('International Conference', 'Anything at all')).toBe(true);
   });
 });

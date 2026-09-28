@@ -186,6 +186,7 @@ describe('routes', () => {
       ['wikicfp/foo#2', 'International Conference on Formal Ontology Objects', [2025]],
       ['wikicfp/foo', 'The IEEE Foo Communications and Networking Conference (FOO)', [2027, 2026]],
     ]);
+    expect((await call<Data>('POST', '/api/venues/import', { ...other, venue: { ...other.venue, sourceKey: 'wikicfp/foo#9' } })).status).toBe(400);
     const r3 = await call<Data>('POST', '/api/venues/import', other);
     expect(r3.json.summary).toMatchObject({ created: false, updated: 1 });
     expect(r3.json.venues).toHaveLength(2);
