@@ -1,11 +1,20 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import type { VenueInput } from '../../shared/venues';
 import { Modal } from '../components/Modal';
+import { useAppData } from '../state/AppDataContext';
 import { useToast } from '../state/useToast';
 import { venuesApi } from './api';
 import { CCFDDL_HOME, loadCatalog, searchCatalog, type CatalogItem } from './ccfddl';
+import { libraryCounts, unlistedVenues } from './suggest';
 import { useVenues } from './VenuesContext';
 
-interface Props { open: boolean; onClose: () => void; onImported: (venueId: number) => void }
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  onImported: (venueId: number) => void;
+  /** 公開データに無いものを、手入力で追加する */
+  onManual: (initial: Partial<VenueInput>) => void;
+}
 
 export function ImportDialog(props: Props) {
   return (
@@ -15,8 +24,9 @@ export function ImportDialog(props: Props) {
   );
 }
 
-function Body({ onClose, onImported }: Props) {
+function Body({ onClose, onImported, onManual }: Props) {
   const { data, apply } = useVenues();
+  const { data: library } = useAppData();
   const toast = useToast();
   const [catalog, setCatalog] = useState<CatalogItem[] | null>(null);
   const [error, setError] = useState('');
@@ -33,7 +43,14 @@ function Body({ onClose, onImported }: Props) {
   }, []);
 
   const tracked = useMemo(() => new Set(data.venues.filter((v) => v.source === 'ccfddl').map((v) => v.sourceKey)), [data.venues]);
-  const hits = useMemo(() => (catalog ? searchCatalog(catalog, q, 30) : []), [catalog, q]);
+  // 台帳の論文に出てくる会議を、候補の上位に出す
+  const counts = useMemo(() => libraryCounts(catalog ?? [], library.entries), [catalog, library.entries]);
+  const hits = useMemo(() => (catalog ? searchCatalog(catalog, q, 30, counts) : []), [catalog, q, counts]);
+  const unlisted = useMemo(
+    () => (catalog ? unlistedVenues(library.entries, [...catalog, ...data.venues]) : []),
+    [catalog, library.entries, data.venues],
+  );
+  const firstOther = q.trim() ? -1 : hits.findIndex((it) => !counts.has(it.key));
 
   const add = async (it: CatalogItem) => {
     if (busy) return;
@@ -89,13 +106,17 @@ function Body({ onClose, onImported }: Props) {
           <input className="aep-q" autoFocus aria-label="会議を検索" placeholder="略称か名前で検索 (例: IMC、USENIX Security)" value={q}
             onChange={(ev) => setQ(ev.target.value)} />
           <ul className="vn-catalog">
-            {hits.map((it) => (
-              <li key={it.key}>
+            {!q.trim() && counts.size > 0 && <li className="vn-cat-h">台帳の論文にある会議</li>}
+            {hits.map((it, i) => (
+              <Fragment key={it.key}>
+              {i === firstOther && i > 0 && <li className="vn-cat-h">そのほかの会議</li>}
+              <li>
                 <span className="vn-cat-main">
                   <span className="vn-acr">{it.acronym}</span>
                   <span className="vn-name">{it.name}</span>
                 </span>
                 <span className="vn-cat-meta">
+                  {counts.has(it.key) && <span className="vn-papers" title="台帳にある、この会議の論文">台帳 {counts.get(it.key)}</span>}
                   {it.core && <span className="pill rank-a">CORE {it.core}</span>}
                   <span>{it.latestYear ? `${it.latestYear} 年まで` : '開催の情報なし'}</span>
                 </span>
@@ -103,9 +124,25 @@ function Body({ onClose, onImported }: Props) {
                   {busy === it.key ? '取り込み中…' : tracked.has(it.key) ? '最新にする' : '追加'}
                 </button>
               </li>
+              </Fragment>
             ))}
             {!hits.length && <li className="vn-none">見つかりません。手入力で追加できます。</li>}
           </ul>
+          {!q.trim() && unlisted.length > 0 && (
+            <section className="vn-unlisted" aria-label="公開データに無い会議・論文誌">
+              <h3>公開データに無いもの</h3>
+              <p className="vn-dialog-note">台帳の論文にある会議・論文誌のうち、公開データに無いものです。手入力で追加できます。</p>
+              <ul>
+                {unlisted.map((u) => (
+                  <li key={u.name}>
+                    <span className="vn-name">{u.name}</span>
+                    <span className="vn-papers">台帳 {u.papers}</span>
+                    <button type="button" className="sbtn" onClick={() => onManual({ name: u.name, kind: u.kind })}>手入力で追加</button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           <div className="vn-dl-foot">
             <span className="vn-dialog-note">{catalog.length} 件の会議から検索しています。</span>
             {tracked.size > 0 && (

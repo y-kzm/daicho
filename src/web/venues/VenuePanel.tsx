@@ -7,7 +7,7 @@ import { useLibrary } from '../state/LibraryContext';
 import { useToast } from '../state/useToast';
 import { venuesApi } from './api';
 import type { EditionTarget } from './EditionDialog';
-import { editionDates, entriesOf, localWhen, originalWhen, remaining } from './format';
+import { editionDates, entriesOf, localWhen, originalWhen, remaining, urgency } from './format';
 import { useVenues } from './VenuesContext';
 
 interface Props {
@@ -95,14 +95,16 @@ export function VenuePanel({ venue, now, onClose, onEditVenue, onEdition }: Prop
                 <button type="button" className="sbtn" onClick={() => onEdition({ venue, edition: e })}>編集</button>
                 <button type="button" className="sbtn danger" aria-label={`${e.year} 年の開催を削除`} onClick={() => removeEdition(e)}>削除</button>
               </div>
-              <div className="vn-ed-meta">
-                {[editionDates(e), e.place].filter(Boolean).join(' · ') || '開催日は未定'}
-              </div>
+              <dl className="vn-ed-facts">
+                <dt>開催</dt>
+                <dd>{editionDates(e) || '未定'}</dd>
+                {e.place && <><dt>場所</dt><dd>{e.place}</dd></>}
+              </dl>
               {isWeb(e.siteUrl)
                 ? <a className="vn-link" href={e.siteUrl} target="_blank" rel="noopener">{e.year} 年のサイト ↗</a>
                 : <span className="vn-ed-nosite">{e.year} 年のサイトは未登録</span>}
               {e.deadlines.length > 0 && (
-                <ul className="vn-ed-deadlines">
+                <ul className="vn-ed-deadlines" aria-label={`${e.year} 年の締切`}>
                   {e.deadlines.map((d) => {
                     const at = dueInstant(d.dueLocal, d.timezone);
                     const days = at ? daysUntil(at, now) : -1;
@@ -113,8 +115,9 @@ export function VenuePanel({ venue, now, onClose, onEditVenue, onEdition }: Prop
                           {d.kind !== 'other' && d.label && <span className="vn-due-label">{d.label}</span>}
                           {d.estimated && <span className="vn-guess">予想</span>}
                         </span>
-                        <span className="vn-dl-when" title={at ? `あなたの地域では ${localWhen(at, true)}` : undefined}>{originalWhen(d)}</span>
-                        <span className="vn-dl-left">{remaining(days)}</span>
+                        <span className="vn-dl-when">{at ? `${localWhen(at, true)} まで` : originalWhen(d)}</span>
+                        <span className="vn-dl-orig">元の表記 {originalWhen(d)}</span>
+                        <span className={'vn-dl-left' + (days >= 0 ? ' ' + urgency(days) : '')}>{remaining(days)}</span>
                       </li>
                     );
                   })}

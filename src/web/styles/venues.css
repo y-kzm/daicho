@@ -35,16 +35,30 @@
 .vn-list { list-style: none; margin: 0; padding: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
 .vn-list > li + li { border-top: 1px solid var(--line-soft); }
 .vn-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
-  padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; font: inherit; color: inherit;
+  display: flex; flex-direction: column; gap: 6px; width: 100%;
+  padding: 12px 16px; border: none; background: none; text-align: left; cursor: pointer; font: inherit; color: inherit;
 }
+.vn-row-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* 次の締切と次の開催。見出し語の幅をそろえて、縦に読み比べられるようにする */
+.vn-facts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 24px; }
+.vn-fact { display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.vn-fact-k { flex: 0 0 auto; min-width: 56px; color: var(--ink-3); }
+.vn-fact-v { font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.vn-fact-left { font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+.vn-fact.near .vn-fact-left { color: var(--r-skim); }
+.vn-fact.soon .vn-fact-left { color: var(--danger); }
+.vn-fact-place { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vn-fact.none .vn-fact-v { font-weight: 400; color: var(--ink-3); }
+.vn-fact .vn-guess { margin-left: 0; }
 .vn-row:hover { background: var(--bg); }
 .vn-row.on { background: var(--line-soft); box-shadow: inset 2px 0 0 var(--accent); }
 .vn-row-main, .vn-cat-main { min-width: 0; display: flex; align-items: baseline; gap: 10px; }
 .vn-acr { font-size: 13.5px; font-weight: 600; white-space: nowrap; }
 .vn-name { font-size: 12.5px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vn-row-meta, .vn-cat-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; font-size: 12.5px; color: var(--ink-2); }
-.vn-next { min-width: 72px; text-align: right; font-variant-numeric: tabular-nums; }
+.vn-ed-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; margin: 6px 0; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.vn-ed-facts dt { color: var(--ink-3); }
+.vn-ed-facts dd { margin: 0; font-weight: 600; color: var(--ink); }
 .vn-papers { color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .vn-archived { display: inline-block; margin: 10px 4px; }
 
@@ -66,9 +80,13 @@
 .vn-ed-deadlines li.past { color: var(--ink-3); }
 .vn-dl-name { font-weight: 600; }
 .vn-ed-deadlines li.past .vn-dl-name { font-weight: 400; }
-.vn-dl-when { grid-column: 1; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.vn-dl-when { grid-column: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.vn-dl-orig { grid-column: 1; font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .vn-ed-deadlines li.past .vn-dl-when { color: var(--ink-3); }
-.vn-dl-left { grid-row: 1 / span 2; grid-column: 2; align-self: center; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.vn-dl-left { grid-row: 1 / span 3; grid-column: 2; align-self: center; font-weight: 600; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.vn-dl-left.near { color: var(--r-skim); }
+.vn-dl-left.soon { color: var(--danger); }
+.vn-ed-deadlines li.past .vn-dl-left { font-weight: 400; color: var(--ink-3); }
 .vn-ed-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
 .vn-src { margin-top: 14px; font-size: 11.5px; color: var(--ink-3); }
 
@@ -97,6 +115,12 @@ label.field.vn-check input[type="checkbox"] { display: inline; width: auto; heig
 .vn-catalog { list-style: none; margin: 10px 0; padding: 0; max-height: 46vh; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius); }
 .vn-catalog > li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 8px 12px; }
 .vn-catalog > li + li { border-top: 1px solid var(--line-soft); }
+.vn-catalog > li.vn-cat-h { display: block; padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--ink-2); background: var(--bg); }
+.vn-unlisted h3 { margin: 14px 0 0; font-size: 13px; font-weight: 600; }
+.vn-unlisted .vn-dialog-note { margin: 2px 0 6px; }
+.vn-unlisted ul { list-style: none; margin: 0 0 10px; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); }
+.vn-unlisted li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 6px 12px; }
+.vn-unlisted li + li { border-top: 1px solid var(--line-soft); }
 .vn-cal-sec { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
 .vn-cal-sec h3 { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
 .vn-cal-sec a.hbtn { text-decoration: none; }
@@ -107,11 +131,69 @@ label.field.vn-check input[type="checkbox"] { display: inline; width: auto; heig
 }
 .vn-steps { margin: 10px 0 0; padding-left: 20px; font-size: 12.5px; line-height: 1.8; color: var(--ink-2); }
 
+/* ---------- カレンダー ---------- */
+.vc-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 4px 0 12px; }
+.vc-month { margin: 0; min-width: 132px; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.vc-nav { display: flex; gap: 4px; }
+.vc-legend { display: flex; gap: 14px; margin-left: auto; font-size: 12px; color: var(--ink-2); }
+.vc-key::before { content: ''; display: inline-block; width: 12px; height: 12px; margin-right: 5px; border-radius: 3px; vertical-align: -2px; }
+.vc-key.deadline::before { background: var(--card); box-shadow: inset 0 0 0 1px var(--line), inset 3px 0 0 var(--danger); }
+.vc-key.held::before { background: var(--accent); }
+.vc-key.guess::before { background: var(--card); border: 1px dashed var(--faint); }
+.vc-grid { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
+.vc-dow { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-bottom: 1px solid var(--line); background: var(--bg); }
+.vc-dow span { padding: 6px 10px; font-size: 12px; color: var(--ink-3); }
+.vc-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 2px; padding-bottom: 6px; }
+.vc-week + .vc-week { border-top: 1px solid var(--line-soft); }
+.vc-day { padding: 6px 10px; border-left: 1px solid var(--line-soft); margin-bottom: -6px; }
+.vc-day:first-child { border-left: none; }
+.vc-day.out { background: var(--bg); }
+.vc-day.out .vc-num { color: var(--faint); }
+.vc-num { display: inline-block; min-width: 22px; font-size: 12.5px; line-height: 20px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.vc-day.today .vc-num { padding: 0 6px; margin-left: -6px; border-radius: 10px; background: var(--ink); color: var(--card); font-weight: 600; }
+.vc-item {
+  position: relative; z-index: 1; min-width: 0; height: 22px; margin: 0 4px; padding: 0 7px; border: none; border-radius: 4px;
+  font: inherit; font-size: 12px; line-height: 22px; text-align: left; cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.vc-item:hover { filter: brightness(.96); }
+/* 締切は白地に色の縁、開催は塗りの帯にして、形で区別する */
+.vc-item.deadline { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line), inset 3px 0 0 var(--ink-3); }
+.vc-item.deadline.near { box-shadow: inset 0 0 0 1px var(--line), inset 3px 0 0 var(--r-skim); }
+.vc-item.deadline.soon { box-shadow: inset 0 0 0 1px var(--line), inset 3px 0 0 var(--danger); font-weight: 600; }
+.vc-item.held { background: var(--accent); color: #fff; }
+.vc-item.past { color: var(--ink-3); }
+.vc-item.held.past { background: var(--line-soft); }
+.vc-item.guess { background: transparent; color: var(--ink-2); box-shadow: none; outline: 1px dashed var(--faint); outline-offset: -1px; }
+.vc-item.cut-l { margin-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.vc-item.cut-r { margin-right: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.vc-agenda { display: none; list-style: none; margin: 0; padding: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
+.vc-agenda > li + li { border-top: 1px solid var(--line-soft); }
+.vc-row {
+  display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; width: 100%;
+  padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font: inherit; font-size: 13px; color: inherit;
+}
+.vc-row.held { box-shadow: inset 3px 0 0 var(--accent); }
+.vc-row.deadline.soon { box-shadow: inset 3px 0 0 var(--danger); }
+.vc-row.deadline.near { box-shadow: inset 3px 0 0 var(--r-skim); }
+.vc-row.past { color: var(--ink-3); }
+.vc-row-day { font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.vc-row-title { font-weight: 600; }
+.vc-row-left { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; }
+
+@media (max-width: 760px) {
+  .vc-grid, .vc-legend { display: none; }
+  .vc-agenda { display: block; }
+  .vn-facts { grid-template-columns: minmax(0, 1fr); }
+}
 @media (max-width: 900px) {
   .venues { flex-direction: column; align-items: stretch; }
   .vn-panel { width: 100%; margin: 14px 0 0; position: static; max-height: none; }
   .vn-due { grid-template-columns: 84px minmax(0, 1fr); }
   .vn-due-orig { display: block; margin-left: 0; }
-  .vn-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .vn-row-top { flex-direction: column; align-items: flex-start; gap: 4px; }
   .vn-dl-row { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 760px) {
+  .venues .lib-tools-right { flex-wrap: wrap; margin-left: 0; }
 }

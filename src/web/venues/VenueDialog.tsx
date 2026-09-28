@@ -5,7 +5,14 @@ import { useToast } from '../state/useToast';
 import { venuesApi } from './api';
 import { useVenues } from './VenuesContext';
 
-interface Props { open: boolean; venue: Venue | null; onClose: () => void; onSaved: (id: number) => void }
+interface Props {
+  open: boolean;
+  venue: Venue | null;
+  /** 新しく追加するときに、あらかじめ入れておく内容 */
+  initial?: Partial<VenueInput>;
+  onClose: () => void;
+  onSaved: (id: number) => void;
+}
 
 export function VenueDialog(props: Props) {
   return (
@@ -19,7 +26,7 @@ const EMPTY: VenueInput = {
   kind: 'conference', acronym: '', name: '', org: '', field: '', core: '', impactFactor: '', siteUrl: '', note: '', source: 'manual', sourceKey: '',
 };
 
-function Body({ venue, onClose, onSaved }: Props) {
+function Body({ venue, initial, onClose, onSaved }: Props) {
   const { apply } = useVenues();
   const toast = useToast();
   const [f, setF] = useState<VenueInput>(() => (venue
@@ -27,7 +34,7 @@ function Body({ venue, onClose, onSaved }: Props) {
       kind: venue.kind, acronym: venue.acronym, name: venue.name, org: venue.org, field: venue.field, core: venue.core,
       impactFactor: venue.impactFactor, siteUrl: venue.siteUrl, note: venue.note, source: venue.source, sourceKey: venue.sourceKey,
     }
-    : EMPTY));
+    : { ...EMPTY, ...initial }));
   const [busy, setBusy] = useState(false);
   const set = <K extends keyof VenueInput>(k: K, v: VenueInput[K]) => setF((s) => ({ ...s, [k]: v }));
   const text = (k: 'acronym' | 'name' | 'org' | 'field' | 'core' | 'impactFactor' | 'siteUrl', extra: Record<string, unknown> = {}) => (

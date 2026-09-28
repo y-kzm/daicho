@@ -1,4 +1,4 @@
-import { hasTime, type Venue, type VenueDeadline, type VenueEdition } from '../../shared/venues';
+import { hasTime, isIsoDate, type Venue, type VenueDeadline, type VenueEdition } from '../../shared/venues';
 import type { Entry } from '../../shared/types';
 
 const WEEK = ['日', '月', '火', '水', '木', '金', '土'];
@@ -34,6 +34,12 @@ export function editionDates(e: Pick<VenueEdition, 'startDate' | 'endDate' | 'da
   if (!e.endDate || e.endDate === e.startDate) return `${y}/${m}/${d}`;
   const [y2, m2, d2] = e.endDate.split('-').map(Number) as [number, number, number];
   return `${y}/${m}/${d} 〜 ${y2 !== y ? y2 + '/' : ''}${m2 !== m || y2 !== y ? m2 + '/' : ''}${d2}`;
+}
+
+/** これから始まるか、開催中の開催のうち、最も近いもの。today は見ている人の地域の日付 (YYYY-MM-DD) */
+export function nextHeld(venue: Pick<Venue, 'editions'>, today: string): VenueEdition | null {
+  const coming = venue.editions.filter((e) => isIsoDate(e.startDate) && (isIsoDate(e.endDate) ? e.endDate : e.startDate) >= today);
+  return coming.sort((a, b) => a.startDate.localeCompare(b.startDate))[0] ?? null;
 }
 
 const norm = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();

@@ -90,10 +90,14 @@ export function toCatalog(records: unknown, thisYear: number): CatalogItem[] {
   return out.sort((a, b) => a.acronym.localeCompare(b.acronym, 'en', { sensitivity: 'base' }));
 }
 
-/** 略称と正式名で探す。前方一致を先に、語の途中の一致を後に並べる */
-export function searchCatalog(items: readonly CatalogItem[], query: string, limit = 40): CatalogItem[] {
+/**
+ * 略称と正式名で探す。前方一致を先に、語の途中の一致を後に並べる。
+ * weight (台帳にある論文の数など) の大きいものを、同じ一致の中で先に並べる。検索語が空のときは、weight のあるものが先頭に来る。
+ */
+export function searchCatalog(items: readonly CatalogItem[], query: string, limit = 40, weight: ReadonlyMap<string, number> = new Map()): CatalogItem[] {
   const q = query.trim().toLowerCase();
-  if (!q) return items.slice(0, limit);
+  const w = (it: CatalogItem): number => weight.get(it.key) ?? 0;
+  if (!q) return [...items].sort((x, y) => w(y) - w(x)).slice(0, limit);
   const scored: [number, CatalogItem][] = [];
   for (const it of items) {
     const a = it.acronym.toLowerCase();
@@ -101,7 +105,7 @@ export function searchCatalog(items: readonly CatalogItem[], query: string, limi
     const score = a === q ? 4 : a.startsWith(q) ? 3 : a.includes(q) ? 2 : n.includes(q) ? 1 : 0;
     if (score) scored.push([score, it]);
   }
-  return scored.sort((x, y) => y[0] - x[0] || x[1].acronym.localeCompare(y[1].acronym)).slice(0, limit).map((x) => x[1]);
+  return scored.sort((x, y) => y[0] - x[0] || w(y[1]) - w(x[1]) || x[1].acronym.localeCompare(y[1].acronym)).slice(0, limit).map((x) => x[1]);
 }
 
 /** 公開データを取得して解析する。解析の道具は、使うときにだけ読み込む */
