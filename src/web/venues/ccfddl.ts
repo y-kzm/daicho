@@ -66,7 +66,7 @@ export function fromCcfddl(rec: CcfddlRecord, thisYear: number): VenueImport | n
     venue: {
       kind: 'conference', acronym, name, org: ORGS.find((o) => new RegExp(`\\b${o}\\b`).test(name)) ?? '', field: '',
       // 公開データでは、順位なしを N と書く
-      core: /^(A\*|A|B|C)$/.test(core) ? core : '', impactFactor: '', siteUrl: '', note: '',
+      core: /^(A\*|A|B|C)$/.test(core) ? core : '', impactFactor: '', siteUrl: '', issn: '', reviewTime: '', submitUrl: '', note: '',
       source: 'ccfddl', sourceKey: `${sub}/${acronym.toLowerCase()}`,
     },
     editions: editions.slice(0, 40),

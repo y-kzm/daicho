@@ -10,7 +10,7 @@ type Data = VenueData & ErrorBody & { id?: number; summary?: { created: boolean;
 
 const venueInput = (over: Partial<VenueInput> = {}): VenueInput => ({
   kind: 'conference', acronym: 'IMC', name: 'ACM Internet Measurement Conference', org: 'ACM', field: 'Network', core: 'A', impactFactor: '',
-  siteUrl: '', note: '', source: 'manual', sourceKey: '', ...over,
+  siteUrl: '', issn: '', reviewTime: '', submitUrl: '', note: '', source: 'manual', sourceKey: '', ...over,
 });
 const editionInput = (over: Partial<EditionInput> = {}): EditionInput => ({
   year: 2026, label: '', siteUrl: 'https://conferences.sigcomm.org/imc/2026/', place: 'TBD', dateText: 'Oct 12-16, 2026',
@@ -28,6 +28,50 @@ async function seed(v = venueInput(), e: EditionInput | null = editionInput()) {
   return { vid, eid };
 }
 const load = async () => (await call<Data>('GET', '/api/venues')).json;
+
+describe('journals', () => {
+  const journal = (over: Partial<VenueInput> = {}) => venueInput({
+    kind: 'journal', acronym: 'ToN', name: 'IEEE/ACM Transactions on Networking', org: 'IEEE', core: '', impactFactor: '3.7',
+    issn: '1063-6692', reviewTime: '最初の判定まで 3 か月', submitUrl: 'https://mc.manuscriptcentral.com/ton', ...over,
+  });
+
+  it('keeps the fields of a journal and its special issues', async () => {
+    const { vid } = await seed(journal(), editionInput({ label: 'Special Issue on Measurement', place: '', dateText: '', startDate: '', endDate: '', deadlines: [
+      { kind: 'paper', label: '', dueLocal: '2026-12-01', timezone: 'AoE', estimated: false, source: 'manual' },
+    ] }));
+    const v = (await load()).venues.find((x) => x.id === vid)!;
+    expect(v).toMatchObject({ kind: 'journal', issn: '1063-6692', reviewTime: '最初の判定まで 3 か月', submitUrl: 'https://mc.manuscriptcentral.com/ton', impactFactor: '3.7' });
+    expect(v.editions[0]).toMatchObject({ year: 2026, label: 'Special Issue on Measurement', startDate: '' });
+    await call('PUT', `/api/venues/${vid}`, journal({ issn: '2332-773x', reviewTime: '' }));
+    expect((await load()).venues[0]).toMatchObject({ issn: '2332-773X', reviewTime: '' });
+  });
+
+  it('checks the ISSN and the address to submit to', async () => {
+    for (const bad of [journal({ issn: '1234' }), journal({ issn: '1063-66921' }), journal({ submitUrl: 'javascript:alert(1)' }), journal({ submitUrl: 'ftp://x.example/' })]) {
+      expect((await call('POST', '/api/venues', bad)).status).toBe(400);
+    }
+    expect((await load()).venues).toEqual([]);
+  });
+
+  it('imports a journal from the public data without editions and keeps what the user entered', async () => {
+    const body = { venue: journal({ source: 'openalex', sourceKey: 'S62238642', impactFactor: '', reviewTime: '', submitUrl: '' }), editions: [] };
+    const r = await call<Data>('POST', '/api/venues/import', body);
+    expect(r.json.summary).toMatchObject({ created: true, added: 0 });
+    const id = r.json.venues[0]!.id;
+    await call('PUT', `/api/venues/${id}`, journal({ impactFactor: '3.7', reviewTime: '3 か月', note: 'mine' }));
+    const again = await call<Data>('POST', '/api/venues/import', { ...body, venue: { ...body.venue, issn: '' } });
+    expect(again.json.summary).toMatchObject({ created: false });
+    expect(again.json.venues).toHaveLength(1);
+    expect(again.json.venues[0]).toMatchObject({ source: 'openalex', issn: '1063-6692', impactFactor: '3.7', reviewTime: '3 か月', note: 'mine' });
+  });
+
+  it('refuses to import from a source that is not a public dataset', async () => {
+    for (const source of ['manual', 'ai', 'estimate', 'other']) {
+      const res = await call('POST', '/api/venues/import', { venue: journal({ source: source as VenueInput['source'], sourceKey: 'k' }), editions: [] });
+      expect(res.status, source).toBe(400);
+    }
+  });
+});
 
 describe('venues CRUD', () => {
   it('starts empty and is separate from the library data', async () => {

@@ -1,5 +1,5 @@
 import type { LlmProvider } from '../../shared/types';
-import type { EditionInput, ExtractedEdition, SiteSearchResult, VenueData, VenueImport, VenueInput } from '../../shared/venues';
+import type { EditionInput, ExtractedEdition, SiteSearchResult, VenueData, VenueImport, VenueInput, WikicfpHit } from '../../shared/venues';
 import { call } from '../api';
 
 const LONG_MS = 90000;
@@ -21,6 +21,8 @@ export const venuesApi = {
   extract: (id: number, url: string, provider: LlmProvider) =>
     call<ExtractedEdition>('POST', `/venues/editions/${id}/extract`, { url, provider }, LONG_MS),
   importVenue: (data: VenueImport) => call<VenueData & { summary: ImportSummary }>('POST', '/venues/import', data),
+  searchWikicfp: (q: string) => call<{ hits: WikicfpHit[] }>('GET', `/venues/wikicfp/search?q=${encodeURIComponent(q)}`, undefined, LONG_MS),
+  wikicfpEvent: (eventId: number) => call<VenueImport>('GET', `/venues/wikicfp/events/${eventId}`, undefined, LONG_MS),
   issueToken: () => call<VenueData>('POST', '/venues/calendar/token'),
   revokeToken: () => call<VenueData>('DELETE', '/venues/calendar/token'),
   downloadUrl: '/api/venues/calendar.ics',

@@ -1,4 +1,5 @@
 import { useMemo, useSyncExternalStore } from 'react';
+import type { VenueKind } from '../../shared/venues';
 
 /**
  * scope = 開いているプロジェクトの id。無ければ全体 (すべての文献)。
@@ -8,8 +9,8 @@ export type Route =
   | { name: 'library'; scope?: number }
   | { name: 'stats'; scope?: number }
   | { name: 'project'; id: number }
-  /** 会議・論文誌 (論文の台帳とは独立した区画) */
-  | { name: 'venues' };
+  /** 国際会議と論文誌 (論文の台帳とは独立した区画。種類ごとに画面を分ける) */
+  | { name: 'venues'; kind: VenueKind };
 
 function toId(s: string | undefined): number | undefined {
   if (!s || !/^[1-9]\d*$/.test(s)) return undefined;
@@ -19,12 +20,14 @@ function toId(s: string | undefined): number | undefined {
 
 /**
  * `#/library` (既定) / `#/stats` / `#/project/:id` (カンバン) /
- * `#/project/:id/library` / `#/project/:id/stats`。解釈できないものはすべて全体の library
+ * `#/project/:id/library` / `#/project/:id/stats` / `#/conferences` / `#/journals`。解釈できないものはすべて全体の library
  */
 export function parseHash(hash: string): Route {
   const path = hash.replace(/^#/, '');
   if (path === '/stats') return { name: 'stats' };
-  if (path === '/venues') return { name: 'venues' };
+  // #/venues は、分ける前の URL
+  if (path === '/conferences' || path === '/venues') return { name: 'venues', kind: 'conference' };
+  if (path === '/journals') return { name: 'venues', kind: 'journal' };
   const m = path.match(/^\/project\/(\d+)(?:\/(library|stats))?$/);
   const id = toId(m?.[1]);
   if (m && id !== undefined) {
@@ -38,7 +41,7 @@ export function parseHash(hash: string): Route {
 export function toHash(r: Route): string {
   switch (r.name) {
     case 'project': return `#/project/${r.id}`;
-    case 'venues': return '#/venues';
+    case 'venues': return r.kind === 'journal' ? '#/journals' : '#/conferences';
     case 'stats': return r.scope === undefined ? '#/stats' : `#/project/${r.scope}/stats`;
     default: return r.scope === undefined ? '#/library' : `#/project/${r.scope}/library`;
   }

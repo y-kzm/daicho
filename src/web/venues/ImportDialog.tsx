@@ -7,6 +7,7 @@ import { venuesApi } from './api';
 import { CCFDDL_HOME, loadCatalog, searchCatalog, type CatalogItem } from './ccfddl';
 import { libraryCounts, unlistedVenues } from './suggest';
 import { useVenues } from './VenuesContext';
+import { WikicfpSearch } from './WikicfpSearch';
 
 interface Props {
   open: boolean;
@@ -47,7 +48,7 @@ function Body({ onClose, onImported, onManual }: Props) {
   const counts = useMemo(() => libraryCounts(catalog ?? [], library.entries), [catalog, library.entries]);
   const hits = useMemo(() => (catalog ? searchCatalog(catalog, q, 30, counts) : []), [catalog, q, counts]);
   const unlisted = useMemo(
-    () => (catalog ? unlistedVenues(library.entries, [...catalog, ...data.venues]) : []),
+    () => (catalog ? unlistedVenues(library.entries, [...catalog, ...data.venues], 8, 'conference') : []),
     [catalog, library.entries, data.venues],
   );
   const inLibrary = hits.filter((it) => counts.has(it.key));
@@ -116,12 +117,18 @@ function Body({ onClose, onImported, onManual }: Props) {
 
   return (
     <div className="inner">
-      <h2>公開データから追加</h2>
+      <h2>国際会議を公開データから追加</h2>
       <p className="vn-dialog-note">
         会議の締切をまとめた公開データ <a href={CCFDDL_HOME} target="_blank" rel="noopener">ccfddl/ccf-deadlines ↗</a> (MIT License) から、
-        年ごとのサイトと締切を取り込みます。論文誌は含まれていません。取り込んだあとに手で直した開催は、再取り込みでも上書きしません。
+        年ごとのサイトと締切を取り込みます。取り込んだあとに手で直した開催は、再取り込みでも上書きしません。
       </p>
-      {error && <div className="df-note">{error} 時間をおいてやり直すか、手入力で追加してください。</div>}
+      {error && (
+        <>
+          <div className="df-note">{error} 時間をおいてやり直すか、WikiCFP か手入力で追加してください。</div>
+          <input className="aep-q" aria-label="会議を検索" placeholder="会議の名前 (例: CCNC)" value={q} onChange={(ev) => setQ(ev.target.value)} />
+          <WikicfpSearch query={q} onImported={onImported} />
+        </>
+      )}
       {!catalog && !error && <div className="df-note"><span className="spin" />公開データを読み込んでいます…</div>}
       {catalog && (
         <>
@@ -134,18 +141,22 @@ function Body({ onClose, onImported, onManual }: Props) {
                 <ul>{g.items.map(item)}</ul>
               </section>
             ))}
-            {!hits.length && <div className="vn-none">見つかりません。手入力で追加できます。</div>}
+            {!hits.length && <div className="vn-none">公開データには見つかりません。下の WikiCFP で探せます。</div>}
           </div>
+          <WikicfpSearch query={q} onImported={onImported} />
           {!q.trim() && unlisted.length > 0 && (
-            <section className="vn-unlisted" aria-label="公開データに無い会議・論文誌">
+            <section className="vn-unlisted" aria-label="公開データに無い会議">
               <h3>公開データに無いもの</h3>
-              <p className="vn-dialog-note">台帳の論文にある会議・論文誌のうち、公開データに無いものです。手入力で追加できます。</p>
+              <p className="vn-dialog-note">台帳の論文にある会議のうち、公開データに無いものです。WikiCFP で探すか、手入力で追加できます。</p>
               <ul>
                 {unlisted.map((u) => (
                   <li key={u.name}>
                     <span className="vn-name">{u.name}</span>
                     <span className="vn-papers">台帳 {u.papers}</span>
-                    <button type="button" className="sbtn" onClick={() => onManual({ name: u.name, kind: u.kind })}>手入力で追加</button>
+                    <span className="vn-unlisted-actions">
+                      <button type="button" className="sbtn" onClick={() => setQ(u.name)}>検索欄に入れる</button>
+                      <button type="button" className="sbtn" onClick={() => onManual({ name: u.name })}>手入力で追加</button>
+                    </span>
                   </li>
                 ))}
               </ul>

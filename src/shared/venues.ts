@@ -11,10 +11,12 @@ export const DEADLINE_LABELS: Record<DeadlineKind, string> = {
 };
 
 /**
- * 取得元。manual = 手で入力・修正した、ccfddl = 公開データ、ai = AI の候補を反映した、
- * estimate = 前の年から予想で作ったまま (公開データに実際の日付が出たら置き換える)
+ * 取得元。manual = 手で入力・修正した、ccfddl / wikicfp = 会議の公開データ、openalex = 論文誌の公開データ、
+ * ai = AI の候補を反映した、estimate = 前の年から予想で作ったまま (公開データに実際の日付が出たら置き換える)
  */
-export const VENUE_SOURCES = ['manual', 'ccfddl', 'ai', 'estimate'] as const;
+export const VENUE_SOURCES = ['manual', 'ccfddl', 'wikicfp', 'openalex', 'ai', 'estimate'] as const;
+/** 取り込みに使える取得元 */
+export const IMPORT_SOURCES = ['ccfddl', 'wikicfp', 'openalex'] as const;
 export type VenueSource = (typeof VENUE_SOURCES)[number];
 
 export const VENUES_MAX = 200;
@@ -59,6 +61,12 @@ export interface Venue {
   core: string;
   impactFactor: string;
   siteUrl: string;
+  /** 以下の 3 つは論文誌で使う */
+  issn: string;
+  /** 査読期間の目安 (例: 3 か月) */
+  reviewTime: string;
+  /** 投稿先の URL */
+  submitUrl: string;
   note: string;
   source: VenueSource;
   sourceKey: string;
@@ -88,6 +96,17 @@ export interface ExtractedEdition {
   /** 候補の根拠になったページ */
   pageUrl: string;
   provider: string;
+}
+
+/** WikiCFP の検索結果の 1 件 */
+export interface WikicfpHit {
+  eventId: number;
+  /** 例: IEEE CCNC 2026 */
+  title: string;
+  name: string;
+  when: string;
+  where: string;
+  deadline: string;
 }
 
 export interface SiteSearchResult {

@@ -50,7 +50,7 @@ describe('fromCcfddl', () => {
     const r = fromCcfddl(IMC[0] as never, 2026)!;
     expect(r.venue).toEqual({
       kind: 'conference', acronym: 'IMC', name: 'ACM Internet Measurement Conference', org: 'ACM', field: '', core: 'A', impactFactor: '',
-      siteUrl: '', note: '', source: 'ccfddl', sourceKey: 'NW/imc',
+      siteUrl: '', issn: '', reviewTime: '', submitUrl: '', note: '', source: 'ccfddl', sourceKey: 'NW/imc',
     });
     expect(r.editions.map((e) => e.year)).toEqual([2026, 2025]);
     expect(r.editions[1]).toMatchObject({

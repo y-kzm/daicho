@@ -40,7 +40,8 @@ export function App() {
 function RouteBody({ route }: { route: Route }) {
   const { open } = useDialogs();
   if (route.name === 'stats') return <StatsView />;
-  if (route.name === 'venues') return <VenuesView />;
+  // key: 国際会議と論文誌を行き来したときに、選択と表示の状態を作り直す
+  if (route.name === 'venues') return <VenuesView key={route.kind} kind={route.kind} />;
   if (route.name === 'project') {
     // key: 別プロジェクトへ移ったときに選択・メモ入力状態を作り直す
     return (

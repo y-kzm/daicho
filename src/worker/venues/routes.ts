@@ -13,6 +13,7 @@ import { extractEdition } from './extract';
 import { buildIcs } from './ics';
 import { findSite, isPublicUrl } from './site';
 import { parseEditionInput, parseVenueImport, parseVenueInput, webUrl } from './validate';
+import { loadWikicfpEvent, searchWikicfp } from './wikicfp';
 
 const venues = new Hono<{ Bindings: Env }>();
 
@@ -39,6 +40,11 @@ venues.post('/import', async (c) => {
   const summary = await importVenue(c.env.DB, parseVenueImport(await jsonBody(c)), new Date().toISOString());
   return c.json({ ...(await data(c.env.DB)), summary });
 });
+
+// WikiCFP から会議を探す (保存はしない。選んだものを /import で取り込む)
+venues.get('/wikicfp/search', async (c) => c.json({ hits: await searchWikicfp(c.req.query('q') ?? '') }));
+
+venues.get('/wikicfp/events/:id', async (c) => c.json(await loadWikicfpEvent(idOf(c))));
 
 venues.get('/calendar.ics', async (c) => {
   const body = calendarBody(await loadVenues(c.env.DB), c.req.query('estimated') !== '0');

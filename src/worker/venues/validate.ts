@@ -1,5 +1,5 @@
 import {
-  DEADLINE_KINDS, DEADLINES_MAX, EDITIONS_MAX, isDueLocal, isIsoDate, tzOffsetMinutes, VENUE_KINDS, VENUE_SOURCES,
+  DEADLINE_KINDS, DEADLINES_MAX, EDITIONS_MAX, IMPORT_SOURCES, isDueLocal, isIsoDate, tzOffsetMinutes, VENUE_KINDS, VENUE_SOURCES,
   type DeadlineInput, type DeadlineKind, type EditionInput, type VenueImport, type VenueInput, type VenueKind, type VenueSource,
 } from '../../shared/venues';
 import { AppError } from '../errors';
@@ -37,6 +37,12 @@ function optDate(v: unknown, what: string): string {
   return s;
 }
 
+function issn(v: unknown): string {
+  const s = str(v).toUpperCase();
+  if (s && !/^\d{4}-\d{3}[\dX]$/.test(s)) throw new AppError('ISSN は 1234-5678 の形で入力してください。');
+  return s;
+}
+
 export function parseVenueInput(body: unknown): VenueInput {
   const b = obj(body);
   const name = text(b.name);
@@ -51,6 +57,9 @@ export function parseVenueInput(body: unknown): VenueInput {
     core: text(b.core, 20),
     impactFactor: text(b.impactFactor, 20),
     siteUrl: webUrl(b.siteUrl, 'サイトの URL'),
+    issn: issn(b.issn),
+    reviewTime: text(b.reviewTime, 60),
+    submitUrl: webUrl(b.submitUrl, '投稿先の URL'),
     note: text(b.note, NOTE_MAX),
     source: oneOf<VenueSource>(VENUE_SOURCES, b.source, 'manual', '取得元'),
     sourceKey: text(b.sourceKey, 120),
@@ -101,7 +110,7 @@ export function parseEditionInput(body: unknown): EditionInput {
 export function parseVenueImport(body: unknown): VenueImport {
   const b = obj(body);
   const venue = parseVenueInput(b.venue);
-  if (venue.source !== 'ccfddl' || !venue.sourceKey) throw new AppError('取り込むデータの取得元が不正です。');
+  if (!(IMPORT_SOURCES as readonly string[]).includes(venue.source) || !venue.sourceKey) throw new AppError('取り込むデータの取得元が不正です。');
   if (!Array.isArray(b.editions)) throw new AppError('取り込むデータが不正です。');
   if (b.editions.length > EDITIONS_MAX) throw new AppError(`一度に取り込める開催は ${EDITIONS_MAX} 件までです。`);
   // 取得元は、画面から送られた値を使わず、会議の取得元にそろえる (次の取り込みで更新できるように)

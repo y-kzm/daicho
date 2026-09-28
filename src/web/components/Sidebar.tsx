@@ -1,3 +1,4 @@
+import { VENUE_KIND_LABELS, VENUE_KINDS } from '../../shared/venues';
 import { useMemo, useState } from 'react';
 import type { Project } from '../../shared/types';
 import { KIND_GROUPS } from '../../shared/types';
@@ -65,15 +66,20 @@ export function Sidebar({ route }: { route: Route }) {
     <aside id="sidebar">
       <div className="side-brand"><img src="/favicon.svg" alt="" width="22" height="22" />研究文献台帳</div>
 
-      {/* 台帳の切り替え。会議・論文誌は、文献とは独立した区画 */}
+      {/* 台帳の切り替え。国際会議と論文誌は、文献とは独立した区画 */}
       <div className="seg side-ledger" role="group" aria-label="台帳の切り替え">
         <button type="button" className={inVenues ? '' : 'on'} aria-pressed={!inVenues} onClick={() => navigate(library)}>文献</button>
-        <button type="button" className={inVenues ? 'on' : ''} aria-pressed={inVenues} onClick={() => navigate({ name: 'venues' })}>会議・論文誌</button>
+        {VENUE_KINDS.map((k) => {
+          const on = route.name === 'venues' && route.kind === k;
+          return <button key={k} type="button" className={on ? 'on' : ''} aria-pressed={on} onClick={() => navigate({ name: 'venues', kind: k })}>{VENUE_KIND_LABELS[k]}</button>;
+        })}
       </div>
       {inVenues && (
         <>
           <div className="side-note side-ledger-note">
-            追跡したい国際会議と論文誌の、締切と開催日をまとめます。文献の台帳とは別に管理します。
+            {route.name === 'venues' && route.kind === 'journal'
+              ? '投稿先として追跡したい論文誌と、特集号の締切をまとめます。文献の台帳とは別に管理します。'
+              : '追跡したい国際会議の、締切と開催日をまとめます。文献の台帳とは別に管理します。'}
           </div>
           <SidebarFooter route={route} showStats={false} />
         </>

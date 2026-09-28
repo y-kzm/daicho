@@ -198,3 +198,15 @@ label.field.vn-check input[type="checkbox"] { display: inline; width: auto; heig
 @media (max-width: 760px) {
   .venues .lib-tools-right { flex-wrap: wrap; margin-left: 0; }
 }
+
+/* ---------- 追加の画面 (WikiCFP、論文誌) ---------- */
+.vn-links { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.vn-unlisted-actions { display: flex; gap: 6px; }
+.vn-unlisted > .sbtn { margin-bottom: 8px; }
+.vn-unlisted li.vn-wk-item { grid-template-columns: minmax(0, 1fr) auto; align-items: start; padding: 8px 12px; }
+.vn-wk-main { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.vn-wk-main .vn-name { white-space: normal; }
+.vn-wk-facts { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.vn-wrap { white-space: normal; }
+form.vn-cal-url { margin: 10px 0; }
+form.vn-cal-url input { font-family: inherit; font-size: 13.5px; background: var(--card); }

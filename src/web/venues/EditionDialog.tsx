@@ -34,8 +34,10 @@ function initial(t: EditionTarget): EditionInput {
     };
   }
   const latest = t.venue.editions.reduce((m, x) => Math.max(m, x.year), 0);
+  const thisYear = new Date().getFullYear();
   return {
-    year: latest ? latest + 1 : new Date().getFullYear() + 1, label: '', siteUrl: '', place: '', dateText: '', startDate: '', endDate: '',
+    // 会議は次の年の開催を、論文誌は今年の特集号を足すことが多い
+    year: t.venue.kind === 'journal' ? thisYear : latest ? latest + 1 : thisYear + 1, label: '', siteUrl: '', place: '', dateText: '', startDate: '', endDate: '',
     estimated: false, source: 'manual', note: '', deadlines: [newDeadline()],
   };
 }
@@ -49,6 +51,8 @@ function Body({ target, onClose }: { target: EditionTarget; onClose: () => void 
   const [provider, setProvider] = useState<LlmProvider>('claude');
   const [found, setFound] = useState<ExtractedEdition | null>(null);
   const saved = target.edition;
+  const journal = target.venue.kind === 'journal';
+  const unit = journal ? '特集号' : '開催';
   const set = <K extends keyof EditionInput>(k: K, v: EditionInput[K]) => setF((s) => ({ ...s, [k]: v }));
   const setDeadline = (i: number, patch: Partial<DeadlineInput>) =>
     setF((s) => ({ ...s, deadlines: s.deadlines.map((d, j) => (j === i ? { ...d, ...patch } : d)) }));
@@ -105,6 +109,7 @@ function Body({ target, onClose }: { target: EditionTarget; onClose: () => void 
   const submit = async (ev: FormEvent) => {
     ev.preventDefault();
     if (busy) return;
+    if (journal && !f.label.trim()) { toast('特集号の名前を入力してください', true); return; }
     const deadlines = f.deadlines.filter((d) => d.dueLocal.trim());
     // 何も変えずに保存した場合は、取得元を保つ (公開データでの更新を止めない)。
     // 変更して保存した内容は手で直したものとして扱い、公開データの再取り込みで上書きしない
@@ -128,25 +133,27 @@ function Body({ target, onClose }: { target: EditionTarget; onClose: () => void 
 
   return (
     <form className="inner" onSubmit={(ev) => void submit(ev)}>
-      <h2>{saved ? `${editionTitle(target.venue, saved)} を編集` : `${target.venue.acronym || target.venue.name} の開催を追加`}</h2>
+      <h2>{saved ? `${editionTitle(target.venue, saved)} を編集` : `${target.venue.acronym || target.venue.name} の${unit}を追加`}</h2>
       <div className="grid">
         <label className="field">年
           <input name="year" type="number" min={1950} max={2100} required value={f.year} onChange={(ev) => set('year', Number(ev.target.value))} />
         </label>
-        <label className="field">名前 (特集号など。通常は空)
-          <input name="label" value={f.label} onChange={(ev) => set('label', ev.target.value)} />
+        <label className="field">{journal ? '特集号の名前' : '名前 (併設の回など。通常は空)'}
+          <input name="label" value={f.label} required={journal} placeholder={journal ? '例: Special Issue on Network Measurement' : ''}
+            onChange={(ev) => set('label', ev.target.value)} />
         </label>
 
         <div className="inline-btn-row full">
-          <label className="field">{f.year} 年のサイト
+          <label className="field">{journal ? '募集のページ' : `${f.year} 年のサイト`}
             <input name="siteUrl" type="url" placeholder="https://" value={f.siteUrl} onChange={(ev) => set('siteUrl', ev.target.value)} />
           </label>
-          <button type="button" disabled={!saved || busy !== ''} onClick={() => void findSite()}
+          {!journal && <button type="button" disabled={!saved || busy !== ''} onClick={() => void findSite()}
             title={saved ? '前の年のサイトの URL から、年を置き換えた候補を確かめます' : '一度保存すると使えます'}>
             {busy === 'site' ? '探しています…' : 'サイトを探す'}
-          </button>
+          </button>}
         </div>
 
+        {!journal && <>
         <label className="field full">開催日の表記
           <input name="dateText" placeholder="例: Oct 12-16, 2026 (読み取れた場合は、下の日付を自動で埋めます)" value={f.dateText}
             onChange={(ev) => onDateText(ev.target.value)} />
@@ -163,6 +170,7 @@ function Body({ target, onClose }: { target: EditionTarget; onClose: () => void 
         <label className="field full">開催地
           <input name="place" placeholder="例: Madrid, Spain" value={f.place} onChange={(ev) => set('place', ev.target.value)} />
         </label>
+        </>}
       </div>
 
       <div className="vn-dl-editor">
@@ -221,21 +229,21 @@ function Body({ target, onClose }: { target: EditionTarget; onClose: () => void 
         <div className="vn-dl-foot">
           <button type="button" className="sbtn" disabled={f.deadlines.length >= DEADLINES_MAX}
             onClick={() => setF((s) => ({ ...s, deadlines: [...s.deadlines, newDeadline()] }))}>締切を追加</button>
-          <span className="vn-dialog-note">日時は、会議のサイトに書かれている表記のまま入力します。AoE は、地球上のどこかでその日が続いている間、という意味です。</span>
+          <span className="vn-dialog-note">日時は、{journal ? '募集のページ' : '会議のサイト'}に書かれている表記のまま入力します。AoE は、地球上のどこかでその日が続いている間、という意味です。</span>
         </div>
       </div>
 
       <div className="grid">
-        <label className="field full vn-check">
+        {!journal && <label className="field full vn-check">
           <span><input type="checkbox" checked={f.estimated} onChange={(ev) => set('estimated', ev.target.checked)} /> 開催日は予想 (未確認)</span>
-        </label>
+        </label>}
         <label className="field full">メモ
           <textarea name="note" value={f.note} onChange={(ev) => set('note', ev.target.value)} />
         </label>
       </div>
       {saved && saved.source !== 'manual' && (
         <p className="vn-dialog-note" role="note">
-          {saved.source === 'estimate' ? 'この開催は、前の年から予想で作ったものです。' : 'この開催は、公開データから取り込んだものです。'}
+          {saved.source === 'estimate' ? `この${unit}は、前の年から予想で作ったものです。` : `この${unit}は、公開データから取り込んだものです。`}
           内容を変えて保存すると、以後は公開データでは更新されなくなります。
         </p>
       )}

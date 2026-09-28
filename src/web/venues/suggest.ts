@@ -18,9 +18,9 @@ export interface Unlisted { name: string; kind: VenueKind; papers: number }
 
 /**
  * 台帳の論文に出てくるが、公開データにも追跡中にも無い会議・論文誌。論文の多い順。
- * 手入力で追加するときの候補にする。
+ * 手入力で追加するときの候補にする。kind を渡すと、その種類だけを返す。
  */
-export function unlistedVenues(entries: readonly Entry[], known: readonly Named[], limit = 8): Unlisted[] {
+export function unlistedVenues(entries: readonly Entry[], known: readonly Named[], limit = 8, kind?: VenueKind): Unlisted[] {
   const groups = new Map<string, Unlisted>();
   for (const e of entries) {
     if ((e.kind ?? 'paper') !== 'paper') continue;
@@ -36,6 +36,7 @@ export function unlistedVenues(entries: readonly Entry[], known: readonly Named[
   const tests = known.map(matcher);
   return [...groups.values()]
     .filter((g) => {
+      if (kind && g.kind !== kind) return false;
       const t = textOf(g.name);
       return !tests.some((m) => m(t));
     })

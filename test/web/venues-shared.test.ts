@@ -13,7 +13,7 @@ const edition = (over: Partial<VenueEdition> = {}): VenueEdition => ({
 });
 const venue = (over: Partial<Venue> = {}): Venue => ({
   id: 1, kind: 'conference', acronym: 'IMC', name: 'Internet Measurement Conference', org: 'ACM', field: '', core: 'A', impactFactor: '',
-  siteUrl: '', note: '', source: 'manual', sourceKey: '', archived: false, editions: [], ...over,
+  siteUrl: '', issn: '', reviewTime: '', submitUrl: '', note: '', source: 'manual', sourceKey: '', archived: false, editions: [], ...over,
 });
 
 describe('tzOffsetMinutes', () => {

@@ -9,6 +9,7 @@ import { venuesApi } from './api';
 import type { EditionTarget } from './EditionDialog';
 import { editionDates, entriesOf, localWhen, originalWhen, remaining, urgency } from './format';
 import { useVenues } from './VenuesContext';
+import { WORDS } from './words';
 
 interface Props {
   venue: Venue;
@@ -29,6 +30,8 @@ export function VenuePanel({ venue, now, onClose, onEditVenue, onEdition }: Prop
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const papers = entriesOf(venue, library.entries);
+  const journal = venue.kind === 'journal';
+  const w = WORDS[venue.kind];
   const latest = venue.editions.filter((e) => !e.label).sort((a, b) => b.year - a.year)[0];
 
   const next = async () => {
@@ -47,12 +50,12 @@ export function VenuePanel({ venue, now, onClose, onEditVenue, onEdition }: Prop
     }
   };
   const remove = () => open({
-    kind: 'confirm', title: '会議・論文誌を削除',
-    body: `「${venueTitle(venue)}」と、その開催・締切をすべて削除します。台帳の論文は削除されません。`, confirmLabel: '削除する',
+    kind: 'confirm', title: `${VENUE_KIND_LABELS[venue.kind]}を削除`,
+    body: `「${venueTitle(venue)}」と、その${w.unit}・締切をすべて削除します。台帳の論文は削除されません。`, confirmLabel: '削除する',
     onConfirm: async () => { if (await run(() => venuesApi.remove(venue.id), '削除しました')) onClose(); },
   });
   const removeEdition = (e: VenueEdition) => open({
-    kind: 'confirm', title: '開催を削除', body: `${e.year} 年の開催と、その締切を削除します。`, confirmLabel: '削除する',
+    kind: 'confirm', title: `${w.unit}を削除`, body: `${e.year} 年の${w.unit}${e.label ? `「${e.label}」` : ''}と、その締切を削除します。`, confirmLabel: '削除する',
     onConfirm: async () => { await run(() => venuesApi.removeEdition(e.id), '削除しました'); },
   });
   const showPapers = () => {
@@ -63,7 +66,7 @@ export function VenuePanel({ venue, now, onClose, onEditVenue, onEdition }: Prop
   };
 
   return (
-    <aside className="detail-panel vn-panel" aria-label="会議・論文誌の詳細">
+    <aside className="detail-panel vn-panel" aria-label={`${VENUE_KIND_LABELS[venue.kind]}の詳細`}>
       <div className="dp-head">
         <h2 className="dp-title">{venueTitle(venue)}</h2>
         <button type="button" className="dp-close" aria-label="詳細を閉じる" onClick={onClose}>×</button>
@@ -77,15 +80,24 @@ export function VenuePanel({ venue, now, onClose, onEditVenue, onEdition }: Prop
         {venue.impactFactor && <span className="pill if">IF {venue.impactFactor}</span>}
         {venue.archived && <span className="pill na">アーカイブ済み</span>}
       </div>
-      {isWeb(venue.siteUrl) && <a className="vn-link" href={venue.siteUrl} target="_blank" rel="noopener">入口のサイトを開く ↗</a>}
+      {journal && (venue.issn || venue.reviewTime) && (
+        <dl className="vn-ed-facts">
+          {venue.issn && <><dt>ISSN</dt><dd>{venue.issn}</dd></>}
+          {venue.reviewTime && <><dt>査読期間</dt><dd>{venue.reviewTime}</dd></>}
+        </dl>
+      )}
+      <div className="vn-links">
+        {isWeb(venue.siteUrl) && <a className="vn-link" href={venue.siteUrl} target="_blank" rel="noopener">{journal ? '論文誌のサイトを開く' : '入口のサイトを開く'} ↗</a>}
+        {journal && isWeb(venue.submitUrl) && <a className="vn-link" href={venue.submitUrl} target="_blank" rel="noopener">投稿先を開く ↗</a>}
+      </div>
       {venue.note && <p className="vn-note">{venue.note}</p>}
       {papers.length > 0 && (
         <button type="button" className="linkbtn" onClick={showPapers}>台帳にある論文 {papers.length} 件を表示</button>
       )}
 
       <section className="dp-sec">
-        <h3>年ごとの開催</h3>
-        {!venue.editions.length && <div className="df-note">まだ開催が登録されていません。</div>}
+        <h3>{w.units}</h3>
+        {!venue.editions.length && <div className="df-note">{journal ? '特集号は登録されていません。通常の投稿には締切がないので、空のままで構いません。' : 'まだ開催が登録されていません。'}</div>}
         <ul className="vn-editions">
           {venue.editions.map((e) => (
             <li key={e.id} className={e.estimated ? 'guess' : ''}>
@@ -94,16 +106,18 @@ export function VenuePanel({ venue, now, onClose, onEditVenue, onEdition }: Prop
                 {e.estimated && <span className="vn-guess" title="前の年から予想した内容です">予想</span>}
                 <span className="spacer" />
                 <button type="button" className="sbtn" onClick={() => onEdition({ venue, edition: e })}>編集</button>
-                <button type="button" className="sbtn danger" aria-label={`${e.year} 年の開催を削除`} onClick={() => removeEdition(e)}>削除</button>
+                <button type="button" className="sbtn danger" aria-label={`${e.year} 年の${w.unit}を削除`} onClick={() => removeEdition(e)}>削除</button>
               </div>
-              <dl className="vn-ed-facts">
-                <dt>開催</dt>
-                <dd>{editionDates(e) || '未定'}</dd>
-                {e.place && <><dt>場所</dt><dd>{e.place}</dd></>}
-              </dl>
+              {!journal && (
+                <dl className="vn-ed-facts">
+                  <dt>開催</dt>
+                  <dd>{editionDates(e) || '未定'}</dd>
+                  {e.place && <><dt>場所</dt><dd>{e.place}</dd></>}
+                </dl>
+              )}
               {isWeb(e.siteUrl)
-                ? <a className="vn-link" href={e.siteUrl} target="_blank" rel="noopener">{e.year} 年のサイト ↗</a>
-                : <span className="vn-ed-nosite">{e.year} 年のサイトは未登録</span>}
+                ? <a className="vn-link" href={e.siteUrl} target="_blank" rel="noopener">{journal ? '募集のページ' : `${e.year} 年のサイト`} ↗</a>
+                : <span className="vn-ed-nosite">{journal ? '募集のページは未登録' : `${e.year} 年のサイトは未登録`}</span>}
               {e.deadlines.length > 0 && (
                 <ul className="vn-ed-deadlines" aria-label={`${e.year} 年の締切`}>
                   {e.deadlines.map((d) => {
@@ -129,8 +143,8 @@ export function VenuePanel({ venue, now, onClose, onEditVenue, onEdition }: Prop
           ))}
         </ul>
         <div className="vn-ed-actions">
-          <button type="button" className="sbtn" onClick={() => onEdition({ venue, edition: null })}>開催を追加</button>
-          {latest && (
+          <button type="button" className="sbtn" onClick={() => onEdition({ venue, edition: null })}>{w.unit}を追加</button>
+          {latest && !journal && (
             <button type="button" className="sbtn" disabled={busy} title="前の年の日付を 1 年ずらし、その年のサイトを探します" onClick={() => void next()}>
               {busy ? 'サイトを探しています…' : `${latest.year + 1} 年を予想で作る`}
             </button>
@@ -146,6 +160,8 @@ export function VenuePanel({ venue, now, onClose, onEditVenue, onEdition }: Prop
         <button type="button" className="hbtn danger" onClick={remove}>削除</button>
       </div>
       {venue.source === 'ccfddl' && <div className="df-note vn-src">締切の一部は、公開データ ccfddl/ccf-deadlines (MIT License) から取り込みました。</div>}
+      {venue.source === 'wikicfp' && <div className="df-note vn-src">日程の一部は、WikiCFP (CC BY-SA 3.0) から取り込みました。会議のサイトで確かめてください。</div>}
+      {venue.source === 'openalex' && <div className="df-note vn-src">名前、ISSN、出版社は、OpenAlex (CC0) から取り込みました。</div>}
     </aside>
   );
 }

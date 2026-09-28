@@ -51,13 +51,16 @@ describe('scopeOf / withScope', () => {
 
 describe('venues route', () => {
   it('has its own address and no project scope', () => {
-    expect(parseHash('#/venues')).toEqual({ name: 'venues' });
-    expect(toHash({ name: 'venues' })).toBe('#/venues');
-    expect(scopeOf({ name: 'venues' })).toBeNull();
+    expect(parseHash('#/conferences')).toEqual({ name: 'venues', kind: 'conference' });
+    expect(parseHash('#/journals')).toEqual({ name: 'venues', kind: 'journal' });
+    expect(parseHash('#/venues')).toEqual({ name: 'venues', kind: 'conference' });
+    expect(toHash({ name: 'venues', kind: 'conference' })).toBe('#/conferences');
+    expect(toHash({ name: 'venues', kind: 'journal' })).toBe('#/journals');
+    expect(scopeOf({ name: 'venues', kind: 'journal' })).toBeNull();
     expect(parseHash('#/venues/1')).toEqual({ name: 'library' });
   });
   it('opens the list when a project is chosen from there', () => {
-    expect(withScope({ name: 'venues' }, 3)).toEqual({ name: 'library', scope: 3 });
-    expect(withScope({ name: 'venues' }, null)).toEqual({ name: 'library' });
+    expect(withScope({ name: 'venues', kind: 'conference' }, 3)).toEqual({ name: 'library', scope: 3 });
+    expect(withScope({ name: 'venues', kind: 'journal' }, null)).toEqual({ name: 'library' });
   });
 });

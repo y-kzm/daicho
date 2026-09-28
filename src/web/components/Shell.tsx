@@ -1,3 +1,4 @@
+import { VENUE_KIND_LABELS } from '../../shared/venues';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { BULK_MAX, CITE_STATES } from '../../shared/types';
 import { BIBTEX_LIMIT, BIBTEX_LIMIT_MESSAGE } from '../api';
@@ -79,7 +80,7 @@ export function Shell({ route, children }: Props) {
 
   const listTitle = scope !== null && source.kind === 'builtin' && source.id === 'all' ? '一覧' : sourceLabel(source, data.savedFilters);
   const inVenues = route.name === 'venues';
-  const title = inVenues ? '会議・論文誌' : route.name === 'stats' ? '統計' : route.name === 'project' ? 'カンバン' : listTitle;
+  const title = route.name === 'venues' ? VENUE_KIND_LABELS[route.kind] : route.name === 'stats' ? '統計' : route.name === 'project' ? 'カンバン' : listTitle;
   const missingBoard = route.name === 'project' && scope === null;
   const count = missingBoard || inVenues ? null : route.name === 'library' ? countFor(entries, apply(query), now) : entries.length;
 

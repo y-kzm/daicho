@@ -6,7 +6,7 @@ import { AppError, notFound } from '../errors';
 
 interface VenueRow {
   id: number; kind: string; acronym: string; name: string; org: string; field: string; core: string; impact_factor: string;
-  site_url: string; note: string; source: string; source_key: string; archived: number;
+  site_url: string; issn: string; review_time: string; submit_url: string; note: string; source: string; source_key: string; archived: number;
 }
 interface EditionRow {
   id: number; venue_id: number; year: number; label: string; site_url: string; place: string; date_text: string;
@@ -28,7 +28,7 @@ const toEdition = (r: EditionRow, deadlines: VenueDeadline[]): VenueEdition => (
 
 const toVenue = (r: VenueRow, editions: VenueEdition[]): Venue => ({
   id: r.id, kind: r.kind as VenueKind, acronym: r.acronym, name: r.name, org: r.org, field: r.field, core: r.core,
-  impactFactor: r.impact_factor, siteUrl: r.site_url, note: r.note, source: r.source as VenueSource, sourceKey: r.source_key,
+  impactFactor: r.impact_factor, siteUrl: r.site_url, issn: r.issn, reviewTime: r.review_time, submitUrl: r.submit_url, note: r.note, source: r.source as VenueSource, sourceKey: r.source_key,
   archived: r.archived === 1, editions,
 });
 
@@ -70,15 +70,15 @@ export async function getEdition(db: D1Database, id: number): Promise<{ venue: V
   throw notFound('開催');
 }
 
-const VENUE_COLS = 'kind, acronym, name, org, field, core, impact_factor, site_url, note, source, source_key';
+const VENUE_COLS = 'kind, acronym, name, org, field, core, impact_factor, site_url, issn, review_time, submit_url, note, source, source_key';
 const venueValues = (v: VenueInput): (string | number)[] =>
-  [v.kind, v.acronym, v.name, v.org, v.field, v.core, v.impactFactor, v.siteUrl, v.note, v.source, v.sourceKey];
+  [v.kind, v.acronym, v.name, v.org, v.field, v.core, v.impactFactor, v.siteUrl, v.issn, v.reviewTime, v.submitUrl, v.note, v.source, v.sourceKey];
 
 export async function insertVenue(db: D1Database, v: VenueInput, now: string): Promise<number> {
   const n = await db.prepare('SELECT COUNT(*) AS n FROM venues').first<{ n: number }>();
   if ((n?.n ?? 0) >= VENUES_MAX) throw new AppError(`登録できる会議・論文誌は ${VENUES_MAX} 件までです。`);
   const r = await db
-    .prepare(`INSERT INTO venues (${VENUE_COLS}, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`)
+    .prepare(`INSERT INTO venues (${VENUE_COLS}, created_at) VALUES (${VENUE_COLS.split(', ').map(() => '?').join(', ')}, ?) RETURNING id`)
     .bind(...venueValues(v), now)
     .first<{ id: number }>();
   if (!r) throw new AppError('登録できませんでした。', 500);
@@ -178,8 +178,9 @@ export async function importVenue(db: D1Database, data: VenueImport, now: string
   if (found) {
     // 名前・略称・順位などは公開データに合わせる。メモと、利用者が入れた分野・IF は残す
     await db
-      .prepare('UPDATE venues SET acronym = ?, name = ?, core = CASE WHEN ? != \'\' THEN ? ELSE core END WHERE id = ?')
-      .bind(data.venue.acronym, data.venue.name, data.venue.core, data.venue.core, venueId)
+      .prepare(`UPDATE venues SET acronym = ?, name = ?, core = CASE WHEN ? != '' THEN ? ELSE core END,
+        issn = CASE WHEN ? != '' THEN ? ELSE issn END WHERE id = ?`)
+      .bind(data.venue.acronym, data.venue.name, data.venue.core, data.venue.core, data.venue.issn, data.venue.issn, venueId)
       .run();
   }
   const current = (await db.prepare('SELECT id, year, label, source FROM venue_editions WHERE venue_id = ?').bind(venueId).all<{

@@ -14,7 +14,7 @@ const edition = (over: Partial<VenueEdition> = {}): VenueEdition => ({
 });
 const venue = (over: Partial<Venue> = {}): Venue => ({
   id: 1, kind: 'conference', acronym: 'IMC', name: 'Internet Measurement Conference', org: 'ACM', field: '', core: 'A', impactFactor: '',
-  siteUrl: '', note: '', source: 'manual', sourceKey: '', archived: false, editions: [], ...over,
+  siteUrl: '', issn: '', reviewTime: '', submitUrl: '', note: '', source: 'manual', sourceKey: '', archived: false, editions: [], ...over,
 });
 const opts = { now: new Date('2026-01-01T00:00:00Z'), includeEstimated: true, since: new Date('2025-07-01T00:00:00Z') };
 const events = (ics: string) => ics.split('BEGIN:VEVENT').slice(1).map((b) => b.replace(/\r\n /g, ''));

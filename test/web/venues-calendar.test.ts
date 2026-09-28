@@ -15,7 +15,7 @@ const edition = (over: Partial<VenueEdition> = {}): VenueEdition => ({
 });
 const venue = (over: Partial<Venue> = {}): Venue => ({
   id: 1, kind: 'conference', acronym: 'IMC', name: 'Internet Measurement Conference', org: '', field: '', core: '', impactFactor: '',
-  siteUrl: '', note: '', source: 'manual', sourceKey: '', archived: false, editions: [edition()], ...over,
+  siteUrl: '', issn: '', reviewTime: '', submitUrl: '', note: '', source: 'manual', sourceKey: '', archived: false, editions: [edition()], ...over,
 });
 /** 日本時間の日付 */
 const jst = (d: Date): string => new Date(d.getTime() + 9 * 3600_000).toISOString().slice(0, 10);
@@ -96,7 +96,7 @@ describe('nextHeld', () => {
 describe('suggestions from the library', () => {
   const cat = (acronym: string, name: string): CatalogItem => ({
     key: 'NW/' + acronym.toLowerCase(), acronym, name, sub: 'NW', core: '', latestYear: 2026,
-    data: { venue: { kind: 'conference', acronym, name, org: '', field: '', core: '', impactFactor: '', siteUrl: '', note: '', source: 'ccfddl', sourceKey: 'NW/' + acronym.toLowerCase() }, editions: [] },
+    data: { venue: { kind: 'conference', acronym, name, org: '', field: '', core: '', impactFactor: '', siteUrl: '', issn: '', reviewTime: '', submitUrl: '', note: '', source: 'ccfddl', sourceKey: 'NW/' + acronym.toLowerCase() }, editions: [] },
   });
   const catalog = [cat('AAAI', 'AAAI Conference on Artificial Intelligence'), cat('DATE', 'Design, Automation and Test in Europe'), cat('IMC', 'Internet Measurement Conference'),
     cat('NSDI', 'Symposium on Networked Systems Design and Implementation'), cat('SIGCOMM', 'ACM SIGCOMM Conference'), cat('SP', 'IEEE Symposium on Security and Privacy')];
