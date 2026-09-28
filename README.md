@@ -36,7 +36,15 @@
   <img src="assets/screenshot-board.png" width="860" alt="プロジェクトのカンバン: 引用状態ごとの 4 列とプロジェクトメモ">
 </p>
 
-<p align="center"><sub>画面は公開論文を使ったデモデータです。</sub></p>
+<p align="center">
+  <img src="assets/screenshot-conferences.png" width="860" alt="国際会議の画面: サイドバーの近い締切と会議の一覧、これからの締切、年ごとの開催の詳細">
+</p>
+
+<p align="center">
+  <img src="assets/screenshot-journals.png" width="860" alt="論文誌の画面: 出版社、Impact Factor、査読期間、特集号の締切">
+</p>
+
+<p align="center"><sub>画面は、公開されている論文と会議の情報を使ったデモデータです。</sub></p>
 
 研究論文のサーベイを、Cloudflare の無料枠だけで動く Web アプリとして管理します。データは Cloudflare D1 (SQLite) に保存され、いつでも CSV / JSON でエクスポートできるので、アプリを捨ててもデータは表として残ります。Cloudflare Access で自分のアカウントだけにアクセスを絞れます。
 
@@ -86,11 +94,17 @@ DOI を貼り付けるだけで、書誌情報から日本語要約までが埋�
 
 追跡したい国際会議と論文誌を、それぞれ別の画面で管理します。サイドバーの上部で「文献 / 国際会議 / 論文誌」を切り替えます。
 
+サイドバーには、近い締切と、追跡している会議・論文誌の一覧が出ます。一覧の右側には、次の締切までの残りを表示します。項目を押すと、その詳細が開きます。
+
+<p align="center">
+  <img src="assets/screenshot-calendar.png" width="860" alt="カレンダー表示: 締切はその日に、開催は期間の帯で表示。予想は破線の枠">
+</p>
+
 **国際会議**
 
 - **年ごとの開催** — 会議そのものと、年ごとの開催を分けて管理します。開催ごとに、その年のサイト、開催日、開催地、締切を持ちます
 - **これからの締切** — 残りの日数で強調が変わります。締切は会議のサイトの表記 (AoE など) のまま記録し、あなたの地域の日時に直して表示します
-- **カレンダー表示** — 締切と開催を、月のカレンダーで確認できます
+- **カレンダー表示** — 締切と開催を、月のカレンダーで確認できます。締切は白地に色の縁、開催は塗りの帯、予想は破線の枠で区別します
 - **公開データから追加** — [ccfddl/ccf-deadlines](https://github.com/ccfddl/ccf-deadlines) (MIT License) から、年ごとのサイトと、複数回ある締切を取り込みます。台帳の論文にある会議を、候補の先頭に出します。追跡中の会議をまとめて最新にできます。手で直した開催は上書きしません
 - **WikiCFP で探す** — 上の公開データに無い会議 (IEEE CCNC など) を、[WikiCFP](http://www.wikicfp.com/) (CC BY-SA 3.0) から取り込みます。取得するのは、検索したときだけです
 - **次の年を予想で作る** — 前の年の日付を 1 年ずらして「予想」として作り、その年のサイトを、URL の年を置き換えた候補から探します
@@ -134,7 +148,7 @@ flowchart TD
     Access["Cloudflare Access<br>(ログイン)"]
     Worker["Cloudflare Worker<br>(Hono, /api/*)"]
     D1["Cloudflare D1<br>(SQLite)"]
-    Ext["外部 API<br>Crossref / DataCite / JaLC / IETF<br>OpenAlex / Semantic Scholar / CORE<br>Gemini / Claude"]
+    Ext["外部 API<br>Crossref / DataCite / JaLC / IETF<br>OpenAlex / Semantic Scholar / CORE<br>ccfddl / WikiCFP<br>Gemini / Claude"]
 
     Browser --> Access --> Worker
     Worker -- "静的配信" --> Browser
@@ -152,13 +166,15 @@ flowchart TD
 |---|---|
 | [Crossref API](https://www.crossref.org/documentation/retrieve-metadata/rest-api/) | 学術論文の DOI メタデータの取得 (第1候補) |
 | [Semantic Scholar API](https://www.semanticscholar.org/product/api) | 学術論文の DOI メタデータの取得  (第2候補) |
-| [OpenAlex API](https://help.openalex.org/api/)| 学術論文の DOI メタデータの取得  (第3候補) |
+| [OpenAlex API](https://help.openalex.org/api/)| 学術論文の DOI メタデータの取得  (第3候補)、論文誌の検索 |
 | [DataCite API](https://support.datacite.org/docs/api) | arXiv 等のプレプリント論文の DOI メタデータの取得 |
 | [JaLC API](https://api.japanlinkcenter.org/api-docs/index.html) | 日本の学会誌 (IEICE 和文誌など) の メタデータの取得 |
 | [IETF Datatracker API](https://datatracker.ietf.org/api/) | Internet-Draft のメタデータの取得 |
 | [Google Gemini API](https://ai.google.dev/gemini-api/docs?hl=ja) | 概要生成・タグ提案 |
 | [Anthropic Claude API](https://platform.claude.com/docs/en/api/overview) | 概要生成・タグ提案 |
 | [CORE Portal](https://portal.core.edu.au/conf-ranks/) | 会議ランクの自動検索 |
+| [ccfddl/ccf-deadlines](https://github.com/ccfddl/ccf-deadlines) | 国際会議の締切と開催日 (MIT License) |
+| [WikiCFP](http://www.wikicfp.com/) | 上の公開データに無い国際会議の締切と開催日 (CC BY-SA 3.0) |
 | [Journal Citation Reports](https://clarivate.com/academia-government/scientific-and-academic-research/research-funding-analytics/journal-citation-reports/) | 論文 IF の検索 (手動検索のみ) |
 
 ## セットアップ

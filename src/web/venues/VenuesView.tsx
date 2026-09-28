@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { upcomingDeadlines, type Venue, type VenueInput, type VenueKind } from '../../shared/venues';
 import { browserStorage, readStored, writeStored } from '../lib/storage';
 import { useAppData } from '../state/AppDataContext';
@@ -14,7 +14,7 @@ import { JournalRow } from './JournalRow';
 import { VenueDialog } from './VenueDialog';
 import { VenuePanel } from './VenuePanel';
 import { VenueRow } from './VenueRow';
-import { useVenues, VenuesProvider } from './VenuesContext';
+import { useVenues, VenuesGate } from './VenuesContext';
 import { WORDS } from './words';
 
 type Dialog =
@@ -30,17 +30,19 @@ const VIEW_KEY = 'daicho.venues.view';
 /** 国際会議 (#/conferences) と論文誌 (#/journals) の区画。論文の台帳とは別に読み込む */
 export function VenuesView({ kind }: { kind: VenueKind }) {
   return (
-    <VenuesProvider>
+    <VenuesGate>
       <VenuesInner kind={kind} />
-    </VenuesProvider>
+    </VenuesGate>
   );
 }
 
 function VenuesInner({ kind }: { kind: VenueKind }) {
-  const { data } = useVenues();
+  // 選択はサイドバーと共有する
+  const { data, selectedId, select: setSelectedId } = useVenues();
   const { data: library } = useAppData();
   const w = WORDS[kind];
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  // 国際会議と論文誌を行き来したときは、選択を外す
+  useEffect(() => () => setSelectedId(null), [setSelectedId]);
   const [dialog, setDialog] = useState<Dialog>({ kind: 'none' });
   const [showArchived, setShowArchived] = useState(false);
   const [view, setViewState] = useState<View>(() => (readStored<string>(browserStorage('local'), VIEW_KEY, 'list') === 'calendar' ? 'calendar' : 'list'));

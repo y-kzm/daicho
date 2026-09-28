@@ -13,6 +13,7 @@ import { InlineName } from './sidebar/InlineName';
 import { ScopeSwitcher } from './sidebar/ScopeSwitcher';
 import { SideItem, type MenuAction } from './sidebar/SideItem';
 import { SidebarFooter } from './sidebar/SidebarFooter';
+import { VenuesSide } from './sidebar/VenuesSide';
 import { useSidebarActions } from './sidebar/useSidebarActions';
 
 /** プロジェクトの中では「未分類」が成り立たず、「ライブラリ」は「一覧」として別に出す */
@@ -76,11 +77,7 @@ export function Sidebar({ route }: { route: Route }) {
       </div>
       {inVenues && (
         <>
-          <div className="side-note side-ledger-note">
-            {route.name === 'venues' && route.kind === 'journal'
-              ? '投稿先として追跡したい論文誌と、特集号の締切をまとめます。文献の台帳とは別に管理します。'
-              : '追跡したい国際会議の、締切と開催日をまとめます。文献の台帳とは別に管理します。'}
-          </div>
+          {route.name === 'venues' && <VenuesSide kind={route.kind} />}
           <SidebarFooter route={route} showStats={false} />
         </>
       )}

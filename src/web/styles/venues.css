@@ -210,3 +210,8 @@ label.field.vn-check input[type="checkbox"] { display: inline; width: auto; heig
 .vn-wrap { white-space: normal; }
 form.vn-cal-url { margin: 10px 0; }
 form.vn-cal-url input { font-family: inherit; font-size: 13.5px; background: var(--card); }
+
+/* 特集号の長い名前でも、ボタンが縦に潰れないようにする */
+.vn-ed-head { align-items: flex-start; }
+.vn-ed-head .vn-ed-year { min-width: 0; overflow-wrap: anywhere; }
+.vn-ed-head .sbtn, .vn-ed-head .vn-guess { flex-shrink: 0; white-space: nowrap; }

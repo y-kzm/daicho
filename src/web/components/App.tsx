@@ -9,6 +9,7 @@ import { LibraryView } from './library/LibraryView';
 import { ProjectView } from './project/ProjectView';
 import { Shell } from './Shell';
 import { StatsView } from './StatsView';
+import { VenuesProvider } from '../venues/VenuesContext';
 import { VenuesView } from '../venues/VenuesView';
 
 export type { DialogState } from '../state/DialogContext';
@@ -29,7 +30,9 @@ export function App() {
       <ScopeProvider scope={scope}>
         {/* key: 範囲ごとに絞り込み・開いている詳細を別々に持つ */}
         <LibraryProvider key={scope ?? 'all'} scope={scope}>
-          <Shell route={route}><RouteBody route={route} /></Shell>
+          <VenuesProvider active={route.name === 'venues'}>
+            <Shell route={route}><RouteBody route={route} /></Shell>
+          </VenuesProvider>
           <AppDialogs />
         </LibraryProvider>
       </ScopeProvider>

@@ -11,13 +11,15 @@ const SERVICES: [string, string, string][] = [
   ['https://datacite.org/', 'DataCite API', 'arXiv 等プレプリント DOI のメタデータ'],
   ['https://japanlinkcenter.org/', 'JaLC API', '日本の学会誌 DOI のメタデータ'],
   ['https://www.semanticscholar.org/product/api', 'Semantic Scholar API', 'アブストラクト取得'],
-  ['https://openalex.org/', 'OpenAlex API', 'アブストラクト取得・ジャーナルの出版国判定'],
+  ['https://openalex.org/', 'OpenAlex API', 'アブストラクト取得・ジャーナルの出版国判定・論文誌の検索'],
   ['https://aistudio.google.com/', 'Google Gemini API', '概要の自動生成'],
   ['https://platform.claude.com/', 'Claude API', '概要の自動生成'],
   ['https://portal.core.edu.au/conf-ranks/', 'CORE Portal', 'CORE Ranking の自動検索'],
   ['https://datatracker.ietf.org/', 'IETF Datatracker', 'Internet-Draft のメタデータ'],
   ['https://tex2e.github.io/rfc-translater/html/index.html', 'RFC Translater', 'RFC エントリのリンク先 (日本語訳)'],
   ['https://developers.google.com/drive', 'Google Drive API', 'PDF の保存'],
+  ['https://github.com/ccfddl/ccf-deadlines', 'ccfddl/ccf-deadlines', '国際会議の締切 (MIT License)'],
+  ['http://www.wikicfp.com/', 'WikiCFP', '国際会議の締切 (CC BY-SA 3.0)'],
 ];
 
 /** showStats: プロジェクトを開いている間は、統計を「このプロジェクト」の中に出すのでここでは出さない */
