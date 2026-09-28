@@ -3,6 +3,10 @@ import { rangeBetween } from '../lib/keys';
 import { useAppData } from './AppDataContext';
 
 export interface SelectionValue {
+  /** 選択モード。入っている間だけ、チェックボックスと一括操作を出す */
+  mode: boolean;
+  /** false にすると、選択も解除する */
+  setMode(on: boolean): void;
   selected: Set<number>;
   focusId: number | null;
   toggle(id: number): void;
@@ -22,6 +26,11 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
   const { data } = useAppData();
   const [selected, setSelected] = useState<Set<number>>(() => new Set());
   const [focusId, setFocusId] = useState<number | null>(null);
+  const [mode, setModeState] = useState(false);
+  const setMode = useCallback((on: boolean) => {
+    setModeState(on);
+    if (!on) setSelected(new Set());
+  }, []);
 
   // 削除・マージで消えたエントリを選択とフォーカスから外す
   useEffect(() => {
@@ -52,8 +61,8 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
   }, [focusId]);
 
   const value = useMemo<SelectionValue>(
-    () => ({ selected, focusId, toggle, selectOnly, selectMany, clear, setFocus, range }),
-    [selected, focusId, toggle, selectOnly, selectMany, clear, setFocus, range],
+    () => ({ mode, setMode, selected, focusId, toggle, selectOnly, selectMany, clear, setFocus, range }),
+    [mode, setMode, selected, focusId, toggle, selectOnly, selectMany, clear, setFocus, range],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

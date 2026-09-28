@@ -34,12 +34,14 @@ interface Props {
   e: Entry;
   selected: boolean;
   focused: boolean;
+  /** 選択モード。チェックボックスを出す */
+  selectable?: boolean;
   onClick: (ev: MouseEvent<HTMLDivElement>) => void;
   onTagClick: (t: string) => void;
 }
 
 /** カード表示の 1 件。編集・削除は詳細パネルから行う (ドラッグ配置は廃止) */
-export function EntryCard({ e, selected, focused, onClick, onTagClick }: Props) {
+export function EntryCard({ e, selected, focused, selectable = false, onClick, onTagClick }: Props) {
   const read = e.read || '未読';
   const venue = [e.journal, e.conference].filter(Boolean);
   if (!venue.length && e.publisher) venue.push(e.publisher);
@@ -47,6 +49,8 @@ export function EntryCard({ e, selected, focused, onClick, onTagClick }: Props) 
     <div className={'entry r' + read + (selected ? ' selected' : '') + (focused ? ' focused' : '')}
       data-entry-id={e.id} onClick={onClick}>
       <div className="e-top">
+        {/* クリックはカード全体で受けるので、チェックボックスは表示だけ */}
+        {selectable && <input type="checkbox" className="e-check" readOnly tabIndex={-1} checked={selected} aria-label={`${e.title} を選択`} />}
         <span className={'star' + (e.starred ? ' on' : '')} aria-label={e.starred ? 'スター付き' : 'スターなし'}>
           {e.starred ? '★' : '☆'}
         </span>

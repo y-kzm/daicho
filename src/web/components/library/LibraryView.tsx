@@ -37,7 +37,7 @@ function LibraryInner() {
   const { data } = useAppData();
   const { scope, project, entries: pool, apply } = useScope();
   const { query, setQuery, source, detailId, setDetailId, selectSource } = useLibrary();
-  const { setFocus } = useSelection();
+  const { setFocus, mode, setMode } = useSelection();
   const { open: openDialog } = useDialogs();
   const [view, setView] = useSessionState<ViewMode>(STORAGE_KEYS.view, 'table');
   const [storedColumns, setColumns] = useLocalState<ColumnKey[]>(STORAGE_KEYS.columns, DEFAULT_COLUMNS);
@@ -84,6 +84,8 @@ function LibraryInner() {
         <div className="lib-tools">
           <FilterBar />
           <div className="lib-tools-right">
+            <button type="button" className={'hbtn' + (mode ? ' on' : '')} aria-pressed={mode}
+              title="複数の論文を選んで、まとめて操作する" onClick={() => setMode(!mode)}>選択</button>
             <ViewControls view={view} onView={setView} groupBy={groupBy} groupKeys={groupKeysFor(projectId)}
               onGroupBy={(g) => setQuery((q) => ({ ...q, groupBy: g }))}
               sort={sort} onSort={(s) => setQuery((q) => ({ ...q, sort: s.key, sortDir: s.dir }))}
@@ -94,7 +96,7 @@ function LibraryInner() {
           </div>
         </div>
         <FilterChips />
-        <BulkBar />
+        <BulkBar visibleIds={ordered} />
         {pool.length === 0 && projectId !== undefined ? (
           <div className="empty">
             このプロジェクトには、まだ論文がありません

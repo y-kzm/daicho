@@ -34,19 +34,21 @@ export function EntryTable({
   const grouped = isGrouped(groups);
   const onRowClick = useRowClick(visibleIds(groups, collapsed), onOpen);
   const allSelected = entries.length > 0 && entries.every((e) => sel.selected.has(e.id));
-  const colSpan = cols.length + extraColumns.length + 1;
+  const colSpan = cols.length + extraColumns.length + (sel.mode ? 1 : 0);
   const ariaSort = (key?: SortKey): 'ascending' | 'descending' | undefined =>
     key !== undefined && key === sort.key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined;
 
   return (
     <div className="table-wrap">
-      <table className="etable">
+      <table className={'etable' + (sel.mode ? ' selecting' : '')}>
         <thead>
           <tr>
-            <th className="c-check">
-              <input type="checkbox" aria-label="すべて選択" checked={allSelected}
-                onChange={() => (allSelected ? sel.clear() : sel.selectMany(entries.map((e) => e.id)))} />
-            </th>
+            {sel.mode && (
+              <th className="c-check">
+                <input type="checkbox" aria-label="すべて選択" checked={allSelected}
+                  onChange={() => (allSelected ? sel.clear() : sel.selectMany(entries.map((e) => e.id)))} />
+              </th>
+            )}
             {cols.map((c) => {
               const s = c.sort;
               return (
@@ -74,9 +76,11 @@ export function EntryTable({
                     className={(sel.selected.has(e.id) ? 'selected' : '') + (sel.focusId === e.id ? ' focused' : '')}
                     onMouseDown={(ev) => { if (ev.shiftKey) ev.preventDefault(); }}
                     onClick={(ev) => onRowClick(ev, e.id)}>
-                    <td className="c-check" onClick={(ev) => ev.stopPropagation()}>
-                      <input type="checkbox" aria-label="選択" checked={sel.selected.has(e.id)} onChange={() => sel.toggle(e.id)} />
-                    </td>
+                    {sel.mode && (
+                      <td className="c-check" onClick={(ev) => ev.stopPropagation()}>
+                        <input type="checkbox" aria-label={`${e.title} を選択`} checked={sel.selected.has(e.id)} onChange={() => sel.toggle(e.id)} />
+                      </td>
+                    )}
                     {cols.map((c) => (
                       <td key={c.key} className={'c-' + c.key}
                         onClick={c.key === 'star' ? (ev) => { ev.stopPropagation(); actions.toggleStar(e); } : undefined}>

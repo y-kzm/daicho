@@ -29,7 +29,7 @@ export function CardGrid({ groups, collapsed, onToggleGroup, onOpen, onTagClick 
             {!closed && (
               <div className="card-grid">
                 {g.entries.map((e) => (
-                  <EntryCard key={e.id} e={e} selected={sel.selected.has(e.id)} focused={sel.focusId === e.id}
+                  <EntryCard key={e.id} e={e} selected={sel.selected.has(e.id)} focused={sel.focusId === e.id} selectable={sel.mode}
                     onClick={(ev) => onClick(ev, e.id)} onTagClick={onTagClick} />
                 ))}
               </div>

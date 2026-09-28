@@ -53,6 +53,8 @@ export function useListKeys(opts: Options): void {
         case 'toggle':
           if (focus === null) return;
           ev.preventDefault();
+          // Space での選択は明示的な操作なので、選択モードに入る
+          if (!s.mode) s.setMode(true);
           s.toggle(focus);
           return;
         case 'open':
@@ -62,7 +64,7 @@ export function useListKeys(opts: Options): void {
           return;
         case 'escape':
           if (o.detailOpen) o.onCloseDetail();
-          else s.clear();
+          else s.setMode(false);
           return;
         case 'star':
           if (entry) a.toggleStar(entry);

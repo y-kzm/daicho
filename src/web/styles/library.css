@@ -58,8 +58,12 @@
 .etable tbody tr[data-entry-id] { cursor: pointer; }
 .etable tbody tr[data-entry-id]:hover { background: var(--bg); }
 .etable tbody tr.selected, .etable tbody tr.selected:hover { background: var(--accent-soft); }
+.etable tbody tr.focused { background: var(--line-soft); }
 .etable tbody tr.focused td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+.etable tbody tr.selected.focused { background: var(--accent-soft); }
 .etable th:first-child, .etable td:first-child { padding-left: 14px; }
+/* 選択モードでは、行のどこを押しても選択になる */
+.etable.selecting tbody tr[data-entry-id] { cursor: default; }
 .etable th:last-child, .etable td:last-child { padding-right: 14px; }
 .c-check { width: 30px; }
 .c-star { width: 28px; text-align: center; }
@@ -98,6 +102,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .entry.selected { background: var(--accent-soft); border-color: transparent; }
 .entry.focused { box-shadow: 0 0 0 2px var(--accent); }
 .e-top { display: flex; gap: 8px; align-items: flex-start; }
+.e-check { margin: 4px 0 0; flex-shrink: 0; pointer-events: none; }
 .e-top .star, .e-top .prio, .e-top .read-label { flex-shrink: 0; margin-top: 2px; }
 .e-title { flex: 1; font-weight: 600; font-size: 14px; line-height: 1.45; min-width: 0; }
 .e-title .yr { font-weight: 400; color: var(--ink-3); font-size: 12.5px; margin-left: 8px; }
@@ -118,12 +123,14 @@ input[type="checkbox"] { accent-color: var(--accent); }
   box-shadow: var(--shadow);
 }
 /* バーに直接並ぶボタンだけを白抜きにする (開いたパネルの中のボタンは通常の色のまま) */
-.bulkbar > .hbtn, .bulkbar > span > .popover > .hbtn {
+.bulk-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.bulkbar .bulk-done, .bulk-actions > .hbtn, .bulk-actions > span > .popover > .hbtn {
   padding: 4px 10px; font-size: 12.5px; background: rgba(255, 255, 255, .1); border-color: transparent; color: #fff;
 }
-.bulkbar > .hbtn:hover, .bulkbar > span > .popover > .hbtn:hover { background: rgba(255, 255, 255, .2); }
+.bulkbar .bulk-done:hover, .bulk-actions > .hbtn:hover, .bulk-actions > span > .popover > .hbtn:hover { background: rgba(255, 255, 255, .2); }
+.bulkbar .bulk-done { background: rgba(255, 255, 255, .22); font-weight: 600; }
 /* 濃い背景の上では、フォーカスの枠を白にする */
-.bulkbar > :focus-visible, .bulkbar > span > .popover > :focus-visible { outline-color: #fff; }
+.bulkbar > :focus-visible, .bulk-actions > :focus-visible, .bulk-actions > span > .popover > :focus-visible { outline-color: #fff; }
 .bulk-count { font-size: 13px; font-weight: 600; margin-right: 8px; font-variant-numeric: tabular-nums; }
 .bulkbar .linkbtn { color: rgba(255, 255, 255, .72); padding: 0 8px; }
 .bulkbar .linkbtn:hover { color: #fff; }

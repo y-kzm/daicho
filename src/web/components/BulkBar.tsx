@@ -14,14 +14,15 @@ import { Popover } from './Popover';
 const PRIORITY_MENU = [...PRIORITIES].reverse();
 
 /** 選択中の論文への一括操作 (契約 §8 の文言) */
-export function BulkBar() {
-  const { selected, clear } = useSelection();
+export function BulkBar({ visibleIds }: { visibleIds: number[] }) {
+  const { mode, setMode, selected, clear, selectMany } = useSelection();
   const { data, applyData } = useAppData();
   const { scope, project } = useScope();
   const { open } = useDialogs();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  if (!selected.size) return null;
+  if (!mode) return null;
+  const none = selected.size === 0;
 
   const ids = [...selected];
   const tooMany = ids.length > BULK_MAX;
@@ -30,7 +31,7 @@ export function BulkBar() {
   const projects = sortByOrder(data.projects).filter((p) => !p.archived && p.id !== scope);
 
   const run = async (op: BulkOp, done: string) => {
-    if (busy) return;
+    if (busy || none) return;
     if (tooMany) { toast(BULK_LIMIT_MESSAGE, true); return; }
     setBusy(true);
     try {
@@ -78,7 +79,9 @@ export function BulkBar() {
 
   return (
     <div className="bulkbar" role="toolbar" aria-label="一括操作">
-      <span className="bulk-count">{ids.length} 件選択</span>
+      <span className="bulk-count">{none ? '論文をクリックして選択' : `${ids.length} 件選択`}</span>
+      {!none && (
+      <div className="bulk-actions">
       <span aria-disabled={busy} style={busy ? { pointerEvents: 'none', opacity: 0.6 } : undefined}>
         <Popover label="タグ" className="hbtn">
           {(close) => (
@@ -145,8 +148,14 @@ export function BulkBar() {
           )}
         </Popover>
       </span>
+      </div>
+      )}
       <span className="spacer" />
-      <button type="button" className="linkbtn" onClick={clear}>選択解除</button>
+      {selected.size < visibleIds.length && (
+        <button type="button" className="linkbtn" onClick={() => selectMany(visibleIds)}>すべて選択 ({visibleIds.length})</button>
+      )}
+      {!none && <button type="button" className="linkbtn" onClick={clear}>選択解除</button>}
+      <button type="button" className="hbtn bulk-done" onClick={() => setMode(false)}>選択を終了</button>
     </div>
   );
 }
