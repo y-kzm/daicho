@@ -1,4 +1,4 @@
-import { daysUntil, DEADLINE_LABELS, VENUE_KIND_LABELS, venueTitle, type UpcomingDeadline, type Venue } from '../../shared/venues';
+import { daysUntil, DEADLINE_LABELS, venueTitle, type UpcomingDeadline, type Venue } from '../../shared/venues';
 import { editionDates, localWhen, nextHeld, remaining, urgency } from './format';
 
 interface Props {
@@ -23,11 +23,12 @@ export function VenueRow({ venue: v, next, papers, now, today, selected, onSelec
           <span className="vn-acr">{venueTitle(v)}</span>
           {v.acronym && v.name !== v.acronym && <span className="vn-name">{v.name}</span>}
         </span>
-        <span className="vn-row-meta">
-          {v.kind === 'journal' && <span className="pill">{VENUE_KIND_LABELS.journal}</span>}
-          {v.core && <span className="pill rank-a">CORE {v.core}</span>}
-          {v.impactFactor && <span className="pill if">IF {v.impactFactor}</span>}
-          {papers > 0 && <span className="vn-papers" title="台帳にある、この会議・論文誌の論文">台帳 {papers}</span>}
+        {/* 値が無い行でも列の位置がずれないように、列は常に置く */}
+        <span className="vn-row-meta vn-cols">
+          <span className="vn-col rank">{v.core && <span className="pill rank-a">CORE {v.core}</span>}</span>
+          <span className="vn-col papers">
+            {papers > 0 && <span className="vn-papers" title="台帳にある、この会議の論文">台帳 {papers}</span>}
+          </span>
         </span>
       </span>
       <span className="vn-facts">

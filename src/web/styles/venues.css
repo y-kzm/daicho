@@ -215,3 +215,15 @@ form.vn-cal-url input { font-family: inherit; font-size: 13.5px; background: var
 .vn-ed-head { align-items: flex-start; }
 .vn-ed-head .vn-ed-year { min-width: 0; overflow-wrap: anywhere; }
 .vn-ed-head .sbtn, .vn-ed-head .vn-guess { flex-shrink: 0; white-space: nowrap; }
+
+/* 一覧の右側 (順位、台帳の件数)。列の幅を固定して、行ごとに位置がずれないようにする */
+.vn-cols { gap: 0; }
+.vn-col { display: flex; align-items: center; justify-content: flex-start; flex: 0 0 auto; }
+.vn-col.rank { width: 84px; }
+.vn-col.papers { width: 60px; justify-content: flex-end; }
+.vn-col.org { width: 96px; justify-content: flex-end; margin-right: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 900px) {
+  .vn-cols { gap: 8px; }
+  .vn-col { width: auto !important; margin: 0; }
+  .vn-col:empty { display: none; }
+}

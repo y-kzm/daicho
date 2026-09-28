@@ -20,10 +20,13 @@ export function JournalRow({ venue: v, next, papers, now, selected, onSelect }: 
           <span className="vn-acr">{venueTitle(v)}</span>
           {v.acronym && v.name !== v.acronym && <span className="vn-name">{v.name}</span>}
         </span>
-        <span className="vn-row-meta">
-          {v.org && <span>{v.org}</span>}
-          {v.impactFactor && <span className="pill if">IF {v.impactFactor}</span>}
-          {papers > 0 && <span className="vn-papers" title="台帳にある、この論文誌の論文">台帳 {papers}</span>}
+        {/* 値が無い行でも列の位置がずれないように、列は常に置く */}
+        <span className="vn-row-meta vn-cols">
+          <span className="vn-col org">{v.org}</span>
+          <span className="vn-col rank">{v.impactFactor && <span className="pill if">IF {v.impactFactor}</span>}</span>
+          <span className="vn-col papers">
+            {papers > 0 && <span className="vn-papers" title="台帳にある、この論文誌の論文">台帳 {papers}</span>}
+          </span>
         </span>
       </span>
       <span className="vn-facts">
