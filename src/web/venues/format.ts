@@ -1,5 +1,6 @@
 import { hasTime, isIsoDate, type Venue, type VenueDeadline, type VenueEdition } from '../../shared/venues';
 import type { Entry } from '../../shared/types';
+import { matcher, venueTextOf } from './match';
 
 const WEEK = ['日', '月', '火', '水', '木', '金', '土'];
 const pad = (n: number): string => String(n).padStart(2, '0');
@@ -43,21 +44,14 @@ export function nextHeld(venue: Pick<Venue, 'editions'>, today: string): VenueEd
   return coming.sort((a, b) => a.startDate.localeCompare(b.startDate))[0] ?? null;
 }
 
-const norm = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-
 /**
- * 台帳の論文のうち、この会議・論文誌のものを数える。
- * 会議名・誌名が、略称か正式名と一致する (語として含む) ものを対象にする。
+ * 台帳の論文のうち、この会議・論文誌のもの。
+ * 追加の画面の候補と同じ規則で照合する (件数が画面によって変わらないように)。
  */
 export function entriesOf(venue: Pick<Venue, 'acronym' | 'name'>, entries: readonly Entry[]): Entry[] {
-  const acr = norm(venue.acronym);
-  const name = norm(venue.name);
-  if (!acr && !name) return [];
+  const test = matcher(venue);
   return entries.filter((e) => {
-    const v = norm(`${e.conference} ${e.journal}`);
-    if (!v) return false;
-    // 語の途中の一致は数えない (SP が ASPLOS に、IMC が IMCOM に一致しないように)
-    const has = (w: string): boolean => w.length >= 2 && ` ${v} `.includes(` ${w} `);
-    return has(name) || has(acr);
+    const t = venueTextOf(e);
+    return t !== null && test(t);
   });
 }

@@ -38,6 +38,17 @@ describe('entriesOf', () => {
     expect(entriesOf({ acronym: 'SP', name: 'SP' }, list).map((e) => e.id)).toEqual([2]);
     expect(entriesOf({ acronym: 'IMC', name: 'IMC' }, list)).toEqual([]);
   });
+  it('counts the same papers as the suggestions do', () => {
+    const list = [
+      entry({ id: 1, conference: 'Sigcomm 2021' }), entry({ id: 2, conference: 'ACM Symposium on Cloud Computing' }), entry({ id: 3, conference: 'IEEE CLOUD 2022' }),
+      entry({ id: 4, journal: 'Up to date networking' }), entry({ id: 5, conference: 'DATE 2020' }), entry({ id: 6, kind: 'rfc', conference: 'SIGCOMM' }),
+      entry({ id: 7, journal: 'CoRR' }),
+    ];
+    expect(entriesOf({ acronym: 'SIGCOMM', name: 'ACM SIGCOMM Conference' }, list).map((e) => e.id)).toEqual([1]);
+    expect(entriesOf({ acronym: 'CLOUD', name: 'IEEE International Conference on Cloud Computing' }, list).map((e) => e.id)).toEqual([3]);
+    expect(entriesOf({ acronym: 'DATE', name: 'Design, Automation and Test in Europe' }, list).map((e) => e.id)).toEqual([5]);
+    expect(entriesOf({ acronym: 'CoRR', name: 'Computing Research Repository' }, list)).toEqual([]);
+  });
   it('does not match on a one-letter acronym or on nothing', () => {
     expect(entriesOf({ acronym: 'A', name: '' }, [entry({ id: 1, conference: 'A B C' })])).toEqual([]);
     expect(entriesOf({ acronym: '', name: '' }, es)).toEqual([]);

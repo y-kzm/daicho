@@ -112,10 +112,11 @@
 .vn-found ul { margin: 6px 0 0; padding-left: 18px; font-variant-numeric: tabular-nums; }
 .vn-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); cursor: pointer; }
 label.field.vn-check input[type="checkbox"] { display: inline; width: auto; height: auto; margin: 0 6px 0 0; padding: 0; vertical-align: -2px; }
-.vn-catalog { list-style: none; margin: 10px 0; padding: 0; max-height: 46vh; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius); }
-.vn-catalog > li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 8px 12px; }
-.vn-catalog > li + li { border-top: 1px solid var(--line-soft); }
-.vn-catalog > li.vn-cat-h { display: block; padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--ink-2); background: var(--bg); }
+.vn-catalog { margin: 10px 0; max-height: 46vh; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+.vn-catalog ul { list-style: none; margin: 0; padding: 0; }
+.vn-catalog li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 8px 12px; }
+.vn-catalog li + li { border-top: 1px solid var(--line-soft); }
+.vn-catalog .vn-cat-h { position: sticky; top: 0; z-index: 1; margin: 0; padding: 6px 12px; border-bottom: 1px solid var(--line-soft); font-size: 12px; font-weight: 600; color: var(--ink-2); background: var(--bg); }
 .vn-unlisted h3 { margin: 14px 0 0; font-size: 13px; font-weight: 600; }
 .vn-unlisted .vn-dialog-note { margin: 2px 0 6px; }
 .vn-unlisted ul { list-style: none; margin: 0 0 10px; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); }

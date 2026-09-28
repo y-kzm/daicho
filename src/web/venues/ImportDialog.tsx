@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { VenueInput } from '../../shared/venues';
 import { Modal } from '../components/Modal';
 import { useAppData } from '../state/AppDataContext';
@@ -50,7 +50,11 @@ function Body({ onClose, onImported, onManual }: Props) {
     () => (catalog ? unlistedVenues(library.entries, [...catalog, ...data.venues]) : []),
     [catalog, library.entries, data.venues],
   );
-  const firstOther = q.trim() ? -1 : hits.findIndex((it) => !counts.has(it.key));
+  const inLibrary = hits.filter((it) => counts.has(it.key));
+  // 検索していないときは、台帳の論文にある会議と、そのほかに分けて見せる
+  const groups = (!q.trim() && inLibrary.length
+    ? [{ title: '台帳の論文にある会議', items: inLibrary }, { title: 'そのほかの会議', items: hits.filter((it) => !counts.has(it.key)) }]
+    : [{ title: '', items: hits }]).filter((g) => g.items.length);
 
   const add = async (it: CatalogItem) => {
     if (busy) return;
@@ -92,6 +96,24 @@ function Body({ onClose, onImported, onManual }: Props) {
     toast(`${targets.length} 件を確認しました (開催の追加 ${added}、更新 ${updated}${failed ? `、失敗 ${failed}` : ''})`, failed > 0);
   };
 
+  const item = (it: CatalogItem) => (
+    <li key={it.key}>
+      <span className="vn-cat-main">
+        <span className="vn-acr">{it.acronym}</span>
+        <span className="vn-name">{it.name}</span>
+      </span>
+      <span className="vn-cat-meta">
+        {counts.has(it.key) && <span className="vn-papers" title="台帳にある、この会議の論文">台帳 {counts.get(it.key)}</span>}
+        {it.core && <span className="pill rank-a">CORE {it.core}</span>}
+        <span>{it.latestYear ? `${it.latestYear} 年まで` : '開催の情報なし'}</span>
+      </span>
+      <button type="button" className="sbtn" disabled={busy !== ''} aria-label={`${it.acronym} を${tracked.has(it.key) ? '最新にする' : '追加'}`}
+        onClick={() => void add(it)}>
+        {busy === it.key ? '取り込み中…' : tracked.has(it.key) ? '最新にする' : '追加'}
+      </button>
+    </li>
+  );
+
   return (
     <div className="inner">
       <h2>公開データから追加</h2>
@@ -105,29 +127,15 @@ function Body({ onClose, onImported, onManual }: Props) {
         <>
           <input className="aep-q" autoFocus aria-label="会議を検索" placeholder="略称か名前で検索 (例: IMC、USENIX Security)" value={q}
             onChange={(ev) => setQ(ev.target.value)} />
-          <ul className="vn-catalog">
-            {!q.trim() && counts.size > 0 && <li className="vn-cat-h">台帳の論文にある会議</li>}
-            {hits.map((it, i) => (
-              <Fragment key={it.key}>
-              {i === firstOther && i > 0 && <li className="vn-cat-h">そのほかの会議</li>}
-              <li>
-                <span className="vn-cat-main">
-                  <span className="vn-acr">{it.acronym}</span>
-                  <span className="vn-name">{it.name}</span>
-                </span>
-                <span className="vn-cat-meta">
-                  {counts.has(it.key) && <span className="vn-papers" title="台帳にある、この会議の論文">台帳 {counts.get(it.key)}</span>}
-                  {it.core && <span className="pill rank-a">CORE {it.core}</span>}
-                  <span>{it.latestYear ? `${it.latestYear} 年まで` : '開催の情報なし'}</span>
-                </span>
-                <button type="button" className="sbtn" disabled={busy !== ''} onClick={() => void add(it)}>
-                  {busy === it.key ? '取り込み中…' : tracked.has(it.key) ? '最新にする' : '追加'}
-                </button>
-              </li>
-              </Fragment>
+          <div className="vn-catalog">
+            {groups.map((g) => (
+              <section key={g.title || 'hits'} aria-label={g.title || '検索の結果'}>
+                {g.title && <h3 className="vn-cat-h">{g.title}</h3>}
+                <ul>{g.items.map(item)}</ul>
+              </section>
             ))}
-            {!hits.length && <li className="vn-none">見つかりません。手入力で追加できます。</li>}
-          </ul>
+            {!hits.length && <div className="vn-none">見つかりません。手入力で追加できます。</div>}
+          </div>
           {!q.trim() && unlisted.length > 0 && (
             <section className="vn-unlisted" aria-label="公開データに無い会議・論文誌">
               <h3>公開データに無いもの</h3>
