@@ -57,7 +57,8 @@ export function VenuePanel({ venue, now, onClose, onEditVenue, onEdition }: Prop
   });
   const showPapers = () => {
     selectSource({ kind: 'builtin', id: 'all' });
-    setQuery((q) => ({ ...q, search: venue.acronym || venue.name }));
+    // 件数は論文だけを数えているので、一覧も論文に絞る
+    setQuery((q) => ({ ...q, search: venue.acronym || venue.name, kinds: ['paper'] }));
     navigate({ name: 'library' });
   };
 

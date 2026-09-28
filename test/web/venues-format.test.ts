@@ -49,6 +49,23 @@ describe('entriesOf', () => {
     expect(entriesOf({ acronym: 'DATE', name: 'Design, Automation and Test in Europe' }, list).map((e) => e.id)).toEqual([5]);
     expect(entriesOf({ acronym: 'CoRR', name: 'Computing Research Repository' }, list)).toEqual([]);
   });
+  it('reads the ways a venue is written in a bibliography', () => {
+    const ids = (v: { acronym: string; name: string }, texts: string[]) =>
+      entriesOf(v, texts.map((conference, i) => entry({ id: i + 1, conference }))).map((e) => e.id);
+    expect(ids({ acronym: 'INFOCOM', name: 'IEEE International Conference on Computer Communications' }, [
+      'IEEE Infocom 2020 - IEEE Conference on Computer Communications', 'IEEE INFOCOM', 'Infocom', 'Infocommunications Journal',
+    ])).toEqual([1, 2, 3]);
+    expect(ids({ acronym: 'IMC', name: 'ACM Internet Measurement Conference' }, [
+      'Proceedings of the 2023 ACM on Internet Measurement Conference', 'Proceedings of the Internet Measurement Conference', 'Proc. ACM IMC', 'imc',
+    ])).toEqual([1, 2, 3]);
+    expect(ids({ acronym: 'SIGCOMM', name: 'ACM SIGCOMM Conference' }, ['Proc. ACM SIGCOMM', 'Sigcomm', 'ACM SIGCOMM Computer Communication Review'])).toEqual([1, 2, 3]);
+    expect(ids({ acronym: 'Networking', name: 'IFIP Networking Conference' }, [
+      'IFIP Networking 2023', 'Proceedings of the ACM on Networking', 'IEEE/ACM Transactions on Networking', 'Networking',
+    ])).toEqual([1, 4]);
+    expect(ids({ acronym: 'USENIX Security', name: 'USENIX Security Symposium' }, ['31st USENIX Security Symposium', 'USENIX Security 2022', 'USENIX ATC'])).toEqual([1, 2]);
+    expect(ids({ acronym: '', name: 'Nature' }, ['Nature', 'Nature Communications', 'Nature 2021'])).toEqual([1, 3]);
+    expect(ids({ acronym: 'NeurIPS', name: 'Conference on Neural Information Processing Systems' }, ['NeurIPS 2023', 'Advances in Neural Information Processing Systems', 'neurips'])).toEqual([1, 3]);
+  });
   it('does not match on a one-letter acronym or on nothing', () => {
     expect(entriesOf({ acronym: 'A', name: '' }, [entry({ id: 1, conference: 'A B C' })])).toEqual([]);
     expect(entriesOf({ acronym: '', name: '' }, es)).toEqual([]);

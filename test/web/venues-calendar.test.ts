@@ -125,6 +125,8 @@ describe('suggestions from the library', () => {
       entry({ id: 4, conference: 'In Proceedings of the 2023 ACM Foo Conference' }), entry({ id: 5, conference: 'ACM Foo Conference' }), entry({ id: 6, conference: "Bar ('23)" }),
     ];
     expect(unlistedVenues(es, [])).toEqual([{ name: 'ACM Foo Conference', kind: 'conference', papers: 2 }, { name: 'Bar', kind: 'conference', papers: 1 }]);
+    const odd = [entry({ id: 1, journal: 'Proceedings of the IEEE' }), entry({ id: 2, journal: 'The Lancet' }), entry({ id: 3, journal: 'In Silico Biology' }), entry({ id: 4, conference: 'In: Proc. of the Foo Workshop' })];
+    expect(unlistedVenues(odd, []).map((u) => u.name)).toEqual(['Foo Workshop', 'In Silico Biology', 'Proceedings of the IEEE', 'The Lancet']);
     expect(libraryCounts([cat('CoRR', 'Computing Research Repository')], es).size).toBe(0);
   });
   it('lists conferences of the library first', () => {

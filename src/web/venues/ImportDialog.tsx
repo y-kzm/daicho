@@ -128,9 +128,9 @@ function Body({ onClose, onImported, onManual }: Props) {
           <input className="aep-q" autoFocus aria-label="会議を検索" placeholder="略称か名前で検索 (例: IMC、USENIX Security)" value={q}
             onChange={(ev) => setQ(ev.target.value)} />
           <div className="vn-catalog">
-            {groups.map((g) => (
-              <section key={g.title || 'hits'} aria-label={g.title || '検索の結果'}>
-                {g.title && <h3 className="vn-cat-h">{g.title}</h3>}
+            {groups.map((g, i) => (
+              <section key={g.title || 'hits'} aria-label={g.title ? undefined : '検索の結果'} aria-labelledby={g.title ? `vn-cat-h${i}` : undefined}>
+                {g.title && <h3 className="vn-cat-h" id={`vn-cat-h${i}`}>{g.title}</h3>}
                 <ul>{g.items.map(item)}</ul>
               </section>
             ))}
