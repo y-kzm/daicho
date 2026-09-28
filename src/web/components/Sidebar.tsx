@@ -31,6 +31,7 @@ export function Sidebar({ route }: { route: Route }) {
   const active = projects.filter((p) => !p.archived);
   const archived = projects.filter((p) => p.archived);
   const inProject = scope !== null;
+  const inVenues = route.name === 'venues';
 
   const library: Route = withScope({ name: 'library' }, scope);
   const isOn = (src: LibrarySource) => route.name === 'library' && sameSource(source, src);
@@ -63,6 +64,22 @@ export function Sidebar({ route }: { route: Route }) {
   return (
     <aside id="sidebar">
       <div className="side-brand"><img src="/favicon.svg" alt="" width="22" height="22" />研究文献台帳</div>
+
+      {/* 台帳の切り替え。会議・論文誌は、文献とは独立した区画 */}
+      <div className="seg side-ledger" role="group" aria-label="台帳の切り替え">
+        <button type="button" className={inVenues ? '' : 'on'} aria-pressed={!inVenues} onClick={() => navigate(library)}>文献</button>
+        <button type="button" className={inVenues ? 'on' : ''} aria-pressed={inVenues} onClick={() => navigate({ name: 'venues' })}>会議・論文誌</button>
+      </div>
+      {inVenues && (
+        <>
+          <div className="side-note side-ledger-note">
+            追跡したい国際会議と論文誌の、締切と開催日をまとめます。文献の台帳とは別に管理します。
+          </div>
+          <SidebarFooter route={route} showStats={false} />
+        </>
+      )}
+      {!inVenues && (
+      <>
 
       <ScopeSwitcher scope={scope} current={project} total={data.entries.length} active={active} archived={archived}
         onSelect={enter} onAdd={() => setAdding('project')} />
@@ -152,6 +169,8 @@ export function Sidebar({ route }: { route: Route }) {
       )}
 
       <SidebarFooter route={route} showStats={!inProject} />
+      </>
+      )}
     </aside>
   );
 }

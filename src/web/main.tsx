@@ -8,6 +8,7 @@ import './styles/base.css';
 import './styles/shell.css';
 import './styles/library.css';
 import './styles/dialogs.css';
+import './styles/venues.css';
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

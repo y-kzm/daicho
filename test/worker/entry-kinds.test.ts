@@ -78,11 +78,11 @@ describe('entry kinds', () => {
 
 describe('migration 0004_entry_kinds', () => {
   it('sorts existing RFCs and drafts, and leaves papers alone', async () => {
-    for (const t of ['attachments', 'drive_auth', 'entry_tags', 'cites', 'saved_filters', 'settings', 'tags', 'projects', 'entries', 'd1_migrations']) {
+    for (const t of ['venue_deadlines', 'venue_editions', 'venues', 'attachments', 'drive_auth', 'entry_tags', 'cites', 'saved_filters', 'settings', 'tags', 'projects', 'entries', 'd1_migrations']) {
       await env.DB.prepare(`DROP TABLE IF EXISTS ${t}`).run();
     }
     const before = env.TEST_MIGRATIONS.filter((m) => m.name < '0004');
-    const last = env.TEST_MIGRATIONS.filter((m) => m.name >= '0004');
+    const last = env.TEST_MIGRATIONS.filter((m) => m.name.startsWith('0004'));
     expect(last.map((m) => m.name)).toEqual(['0004_entry_kinds.sql']);
     await applyD1Migrations(env.DB, before);
     const rows: [string, string, string, string][] = [

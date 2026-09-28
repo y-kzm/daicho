@@ -7,7 +7,9 @@ import { useMemo, useSyncExternalStore } from 'react';
 export type Route =
   | { name: 'library'; scope?: number }
   | { name: 'stats'; scope?: number }
-  | { name: 'project'; id: number };
+  | { name: 'project'; id: number }
+  /** 会議・論文誌 (論文の台帳とは独立した区画) */
+  | { name: 'venues' };
 
 function toId(s: string | undefined): number | undefined {
   if (!s || !/^[1-9]\d*$/.test(s)) return undefined;
@@ -22,6 +24,7 @@ function toId(s: string | undefined): number | undefined {
 export function parseHash(hash: string): Route {
   const path = hash.replace(/^#/, '');
   if (path === '/stats') return { name: 'stats' };
+  if (path === '/venues') return { name: 'venues' };
   const m = path.match(/^\/project\/(\d+)(?:\/(library|stats))?$/);
   const id = toId(m?.[1]);
   if (m && id !== undefined) {
@@ -35,6 +38,7 @@ export function parseHash(hash: string): Route {
 export function toHash(r: Route): string {
   switch (r.name) {
     case 'project': return `#/project/${r.id}`;
+    case 'venues': return '#/venues';
     case 'stats': return r.scope === undefined ? '#/stats' : `#/project/${r.scope}/stats`;
     default: return r.scope === undefined ? '#/library' : `#/project/${r.scope}/library`;
   }
@@ -43,12 +47,14 @@ export function toHash(r: Route): string {
 /** ルートが指すプロジェクトの id。全体なら null */
 export function scopeOf(r: Route): number | null {
   if (r.name === 'project') return r.id;
+  if (r.name === 'venues') return null;
   return r.scope ?? null;
 }
 
 /** 同じ種類の画面を別のスコープで開く (カンバンは全体に無いので一覧にする) */
 export function withScope(r: Route, scope: number | null): Route {
   const s = scope ?? undefined;
+  if (r.name === 'venues') return s === undefined ? { name: 'library' } : { name: 'library', scope: s };
   if (r.name === 'stats') return s === undefined ? { name: 'stats' } : { name: 'stats', scope: s };
   if (r.name === 'project' && s !== undefined) return { name: 'project', id: s };
   return s === undefined ? { name: 'library' } : { name: 'library', scope: s };

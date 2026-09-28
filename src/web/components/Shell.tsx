@@ -78,15 +78,16 @@ export function Shell({ route, children }: Props) {
   };
 
   const listTitle = scope !== null && source.kind === 'builtin' && source.id === 'all' ? '一覧' : sourceLabel(source, data.savedFilters);
-  const title = route.name === 'stats' ? '統計' : route.name === 'project' ? 'カンバン' : listTitle;
+  const inVenues = route.name === 'venues';
+  const title = inVenues ? '会議・論文誌' : route.name === 'stats' ? '統計' : route.name === 'project' ? 'カンバン' : listTitle;
   const missingBoard = route.name === 'project' && scope === null;
-  const count = missingBoard ? null : route.name === 'library' ? countFor(entries, apply(query), now) : entries.length;
+  const count = missingBoard || inVenues ? null : route.name === 'library' ? countFor(entries, apply(query), now) : entries.length;
 
   return (
     <div className="shell">
       <Sidebar route={route} />
       <div className="shell-main">
-        <TopBar title={title} scopeName={scope === null ? undefined : project?.name} count={count}
+        <TopBar title={title} scopeName={scope === null || inVenues ? undefined : project?.name} count={count}
           addLabel={scope === null ? '+ 追加' : '+ このプロジェクトに追加'}
           onOpenPalette={() => setPaletteOpen(true)} onAdd={() => open({ kind: 'entry', id: null })} />
         <main className="page">{children}</main>

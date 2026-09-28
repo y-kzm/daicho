@@ -48,3 +48,16 @@ describe('scopeOf / withScope', () => {
     expect(toHash(withScope({ name: 'project', id: 1 }, null))).toBe('#/library');
   });
 });
+
+describe('venues route', () => {
+  it('has its own address and no project scope', () => {
+    expect(parseHash('#/venues')).toEqual({ name: 'venues' });
+    expect(toHash({ name: 'venues' })).toBe('#/venues');
+    expect(scopeOf({ name: 'venues' })).toBeNull();
+    expect(parseHash('#/venues/1')).toEqual({ name: 'library' });
+  });
+  it('opens the list when a project is chosen from there', () => {
+    expect(withScope({ name: 'venues' }, 3)).toEqual({ name: 'library', scope: 3 });
+    expect(withScope({ name: 'venues' }, null)).toEqual({ name: 'library' });
+  });
+});

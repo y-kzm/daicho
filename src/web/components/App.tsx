@@ -9,6 +9,7 @@ import { LibraryView } from './library/LibraryView';
 import { ProjectView } from './project/ProjectView';
 import { Shell } from './Shell';
 import { StatsView } from './StatsView';
+import { VenuesView } from '../venues/VenuesView';
 
 export type { DialogState } from '../state/DialogContext';
 
@@ -39,6 +40,7 @@ export function App() {
 function RouteBody({ route }: { route: Route }) {
   const { open } = useDialogs();
   if (route.name === 'stats') return <StatsView />;
+  if (route.name === 'venues') return <VenuesView />;
   if (route.name === 'project') {
     // key: 別プロジェクトへ移ったときに選択・メモ入力状態を作り直す
     return (

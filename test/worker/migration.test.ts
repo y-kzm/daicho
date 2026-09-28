@@ -27,7 +27,7 @@ describe('migration 0002_library_ux', () => {
 
   it('upgrades a populated 0001 database with defaults on existing rows', async () => {
     // setup で 0001+0002 が適用済みなので、いったん全テーブルを落として 0001 だけを当て直す
-    for (const t of ['attachments', 'drive_auth', 'entry_tags', 'cites', 'saved_filters', 'settings', 'tags', 'projects', 'entries', 'd1_migrations']) {
+    for (const t of ['venue_deadlines', 'venue_editions', 'venues', 'attachments', 'drive_auth', 'entry_tags', 'cites', 'saved_filters', 'settings', 'tags', 'projects', 'entries', 'd1_migrations']) {
       await env.DB.prepare(`DROP TABLE IF EXISTS ${t}`).run();
     }
     const [first] = env.TEST_MIGRATIONS;

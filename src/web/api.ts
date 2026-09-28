@@ -44,7 +44,7 @@ export async function parseApiResponse(res: Response): Promise<unknown> {
 
 const LONG_TIMEOUT_MS = 90000; // LLM / BibTeX 生成向け
 
-async function call<T>(method: string, path: string, body?: unknown, timeoutMs = 30000): Promise<T> {
+export async function call<T>(method: string, path: string, body?: unknown, timeoutMs = 30000): Promise<T> {
   let res: Response;
   try {
     res = await fetch('/api' + path, {

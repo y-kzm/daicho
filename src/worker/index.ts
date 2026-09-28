@@ -15,6 +15,7 @@ import metadata from './routes/metadata';
 import projects from './routes/projects';
 import tags from './routes/tags';
 import { sameOriginOnly } from './same-origin';
+import venues, { publicCalendar } from './venues/routes';
 
 export type App = Hono<{ Bindings: Env }>;
 
@@ -36,7 +37,10 @@ export function createApp(): App {
   api.route('/maintenance', maintenance);
   api.route('/attachments', attachments);
   api.route('/drive', drive);
+  api.route('/venues', venues);
   app.route('/api', api);
+  // カレンダーの購読用。Google カレンダーがログインなしで取りに来るので /api の外に置く
+  app.get('/cal/:file', publicCalendar);
 
   app.onError((err, c) => {
     if (err instanceof AppError) return c.json({ error: err.message }, err.status as ContentfulStatusCode);

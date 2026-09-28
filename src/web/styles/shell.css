@@ -152,3 +152,8 @@ header.topbar .count { color: var(--ink-3); font-size: 13px; font-variant-numeri
   font-size: 12.5px; color: var(--ink-2); padding: 3px 12px; border-radius: 4px;
 }
 .side-link-btn:hover { color: var(--ink); background: rgba(22, 29, 46, .05); }
+
+/* 台帳の切り替え (文献 / 会議・論文誌) */
+.side-ledger { display: flex; margin: 0 0 10px; }
+.side-ledger button { flex: 1; padding: 5px 8px; }
+.side-ledger-note { padding: 6px 8px 0; font-size: 12px; }
