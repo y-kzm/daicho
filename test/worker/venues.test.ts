@@ -317,6 +317,12 @@ describe('calendar', () => {
   it('serves nothing before a token exists', async () => {
     expect((await app.request(`/cal/${'a'.repeat(48)}.ics`, {}, env)).status).toBe(404);
     expect((await app.request('/cal/.ics', {}, env)).status).toBe(404);
+    // /cal/ の下では、画面の HTML やファイルを返さない
+    for (const p of ['/cal/', '/cal/index.html', '/cal/assets/index.js', '/cal/a/b.ics', '/CAL/test.ics', '/Cal/', '/cal/..;/api/data']) {
+      const res = await app.request(p, {}, env);
+      expect(res.status, p).toBe(404);
+      expect(await res.text(), p).toBe('Not found');
+    }
   });
 
   it('offers a download inside the app', async () => {

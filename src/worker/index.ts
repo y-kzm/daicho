@@ -52,6 +52,9 @@ export function createApp(): App {
 
   app.notFound((c) => {
     if (c.req.path.startsWith('/api/')) return c.json({ error: 'Not found' }, 404);
+    // /cal/ の下は Access の保護の外にあるので、購読用の URL 以外は何も返さない (画面の HTML も返さない)。
+    // Access はパスの大文字と小文字を区別しないので、/CAL/ なども同じ扱いにする
+    if (c.req.path.toLowerCase().startsWith('/cal/')) return c.text('Not found', 404, { 'x-robots-tag': 'noindex' });
     return c.env.ASSETS.fetch(c.req.raw);
   });
 

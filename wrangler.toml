@@ -7,7 +7,8 @@ compatibility_flags = ["nodejs_compat"]
 directory = "./dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
-run_worker_first = ["/api/*", "/cal/*"]
+# /cal/ は大文字と小文字の組み合わせも Worker に渡す (Access が区別しないため)
+run_worker_first = ["/api/*", "/cal/*", "/CAL/*", "/Cal/*", "/cAl/*", "/caL/*", "/CAl/*", "/CaL/*", "/cAL/*"]
 
 [[d1_databases]]
 binding = "DB"
