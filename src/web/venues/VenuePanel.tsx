@@ -107,7 +107,7 @@ export function VenuePanel({ venue, now, onClose, onEditVenue, onEdition }: Prop
                 <ul className="vn-ed-deadlines" aria-label={`${e.year} 年の締切`}>
                   {e.deadlines.map((d) => {
                     const at = dueInstant(d.dueLocal, d.timezone);
-                    const days = at ? daysUntil(at, now) : -1;
+                    const days = at && at.getTime() >= now.getTime() ? daysUntil(at, now) : -1;
                     return (
                       <li key={d.id} className={days < 0 ? 'past' : ''}>
                         <span className="vn-dl-name">

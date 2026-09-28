@@ -22,8 +22,8 @@ export function CalendarView({ venues, now, onOpen }: Props) {
 
   const tone = (it: CalItem): string => {
     if (it.kind === 'held') return it.end < today ? 'past' : '';
-    const days = it.at ? daysUntil(it.at, now) : -1;
-    return days < 0 ? 'past' : urgency(days);
+    // 過ぎたかどうかは時刻で決める (数時間前に過ぎた締切は、日数では 0 日になる)
+    return !it.at || it.at.getTime() < now.getTime() ? 'past' : urgency(daysUntil(it.at, now));
   };
   const describe = (it: CalItem): string => (it.kind === 'deadline' && it.at
     ? `${it.title} ${localWhen(it.at, true)} まで${it.estimated ? ' (予想)' : ''}`
@@ -81,7 +81,7 @@ export function CalendarView({ venues, now, onOpen }: Props) {
                 {it.title}
                 {it.estimated && <span className="vn-guess">予想</span>}
               </span>
-              {it.kind === 'deadline' && it.at && <span className="vc-row-left">{remaining(daysUntil(it.at, now))}</span>}
+              {it.kind === 'deadline' && it.at && <span className="vc-row-left">{it.at.getTime() < now.getTime() ? remaining(-1) : remaining(daysUntil(it.at, now))}</span>}
             </button>
           </li>
         ))}

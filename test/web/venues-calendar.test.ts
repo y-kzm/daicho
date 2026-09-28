@@ -89,6 +89,7 @@ describe('nextHeld', () => {
     expect(nextHeld(v, '2026-10-30')?.id).toBe(2); // 開催中
     expect(nextHeld(v, '2026-10-31')?.id).toBe(3);
     expect(nextHeld(v, '2028-01-01')).toBeNull();
+    expect(nextHeld(venue({ editions: [edition({ startDate: '2026-10-10', endDate: '2026-10-01' })] }), '2026-10-05')?.id).toBe(1);
   });
 });
 
@@ -109,6 +110,22 @@ describe('suggestions from the library', () => {
 
   it('counts the papers of each conference', () => {
     expect([...libraryCounts(catalog, entries)]).toEqual([['NW/imc', 3], ['NW/nsdi', 2], ['NW/sigcomm', 1]]);
+  });
+  it('does not take an ordinary word for an acronym', () => {
+    const more = [...catalog, cat('Networking', 'IFIP Networking Conference'), cat('CLOUD', 'IEEE International Conference on Cloud Computing')];
+    const es = [...entries, entry({ id: 20, conference: 'ACM Symposium on Cloud Computing' }), entry({ id: 21, conference: 'IEEE CLOUD 2022' }), entry({ id: 22, conference: 'IFIP Networking 2023' })];
+    const counts = libraryCounts(more, es);
+    expect(counts.get('NW/networking')).toBe(1);
+    expect(counts.get('NW/cloud')).toBe(1);
+    expect(counts.get('NW/sigcomm')).toBe(1); // Sigcomm 2021 は、会議名が短いので数える
+  });
+  it('leaves out preprints and merges different spellings', () => {
+    const es = [
+      entry({ id: 1, journal: 'arXiv preprint arXiv:2301.00001' }), entry({ id: 2, journal: 'arXiv preprint arXiv:2302.00002' }), entry({ id: 3, journal: 'CoRR' }),
+      entry({ id: 4, conference: 'In Proceedings of the 2023 ACM Foo Conference' }), entry({ id: 5, conference: 'ACM Foo Conference' }), entry({ id: 6, conference: "Bar ('23)" }),
+    ];
+    expect(unlistedVenues(es, [])).toEqual([{ name: 'ACM Foo Conference', kind: 'conference', papers: 2 }, { name: 'Bar', kind: 'conference', papers: 1 }]);
+    expect(libraryCounts([cat('CoRR', 'Computing Research Repository')], es).size).toBe(0);
   });
   it('lists conferences of the library first', () => {
     const counts = libraryCounts(catalog, entries);

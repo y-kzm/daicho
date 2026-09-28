@@ -38,7 +38,8 @@ export function editionDates(e: Pick<VenueEdition, 'startDate' | 'endDate' | 'da
 
 /** これから始まるか、開催中の開催のうち、最も近いもの。today は見ている人の地域の日付 (YYYY-MM-DD) */
 export function nextHeld(venue: Pick<Venue, 'editions'>, today: string): VenueEdition | null {
-  const coming = venue.editions.filter((e) => isIsoDate(e.startDate) && (isIsoDate(e.endDate) ? e.endDate : e.startDate) >= today);
+  // 終了日が開催日より前の場合は、開催日だけを使う (カレンダーと同じ扱い)
+  const coming = venue.editions.filter((e) => isIsoDate(e.startDate) && (isIsoDate(e.endDate) && e.endDate >= e.startDate ? e.endDate : e.startDate) >= today);
   return coming.sort((a, b) => a.startDate.localeCompare(b.startDate))[0] ?? null;
 }
 
