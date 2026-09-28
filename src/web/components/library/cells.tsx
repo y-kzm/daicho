@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Entry } from '../../../shared/types';
-import { PRIORITY_LABELS } from '../../../shared/types';
+import { KIND_BADGES, KIND_LABELS, PRIORITY_LABELS } from '../../../shared/types';
 import { venueOf, type ColumnKey } from '../../lib/table';
 import { VenuePills } from '../EntryCard';
 
@@ -9,7 +9,14 @@ export function renderCell(col: ColumnKey, e: Entry, projectId?: number): ReactN
     case 'star':
       return <span className={'star' + (e.starred ? ' on' : '')} title="クリックで ★ を切り替え (s)">{e.starred ? '★' : '☆'}</span>;
     case 'title':
-      return <span className="t-title" title={e.title}>{e.title}</span>;
+      return (
+        <span className="t-title" title={e.title}>
+          {e.kind !== 'paper' && <span className={'kind-badge k-' + e.kind} title={KIND_LABELS[e.kind]}>{KIND_BADGES[e.kind]}</span>}
+          {e.title}
+        </span>
+      );
+    case 'status':
+      return e.docStatus ? <span className="t-status" title={e.docStatus}>{e.docStatus}</span> : null;
     case 'year':
       return <span className="mono">{e.year}</span>;
     case 'venue':

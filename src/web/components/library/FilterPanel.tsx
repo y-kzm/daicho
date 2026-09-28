@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import type { CiteState, FilterQuery, Priority, Project, ReadState } from '../../../shared/types';
-import { CITE_STATES, PRIORITY_LABELS, READ_STATES } from '../../../shared/types';
+import type { CiteState, EntryKind, FilterQuery, Priority, Project, ReadState } from '../../../shared/types';
+import { CITE_STATES, ENTRY_KINDS, KIND_LABELS, PRIORITY_LABELS, READ_STATES } from '../../../shared/types';
 
 const PRIORITY_ORDER: Priority[] = [3, 2, 1, 0];
 
@@ -52,6 +52,9 @@ export function FilterPanel({ query, tags, projects, onChange }: Props) {
     <div className="fp">
       <Row label="読了">
         <Toggles<ReadState> options={[...READ_STATES]} selected={query.read} label={(s) => s} onChange={(read) => onChange({ read })} />
+      </Row>
+      <Row label="種類">
+        <Toggles<EntryKind> options={[...ENTRY_KINDS]} selected={query.kinds} label={(k) => KIND_LABELS[k]} onChange={(kinds) => onChange({ kinds })} />
       </Row>
       <Row label="タグ">
         {tags.length

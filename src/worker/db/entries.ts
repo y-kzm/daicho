@@ -6,12 +6,12 @@ import { assertProjectExists, citeUpsertStatement } from './projects';
 import { ensureTagStatements, entryTagStatements } from './tags';
 
 const COLS =
-  'title, summary, url, doi, year, country, publisher, journal, impact_factor, conference, core, bibkey, read, note';
+  'title, summary, url, doi, year, country, publisher, journal, impact_factor, conference, core, bibkey, read, note, kind, doc_status';
 
 function values(e: EntryInput): string[] {
   return [
     e.title, e.summary, e.url, e.doi, e.year, e.country, e.publisher, e.journal,
-    e.impactFactor, e.conference, e.core, e.bibkey, e.read || '未読', e.note,
+    e.impactFactor, e.conference, e.core, e.bibkey, e.read || '未読', e.note, e.kind, e.docStatus,
   ];
 }
 
@@ -30,7 +30,7 @@ export async function insertEntry(
 ): Promise<number> {
   for (const p of projects) await assertProjectExists(db, p.projectId);
   const insertStmt = db
-    .prepare(`INSERT INTO entries (added, ${COLS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .prepare(`INSERT INTO entries (added, ${COLS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(added, ...values(input));
   const newIdSql = { sql: `(SELECT seq FROM sqlite_sequence WHERE name = 'entries')` };
   await db.batch([

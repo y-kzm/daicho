@@ -3,7 +3,8 @@ import { AppError } from '../errors';
 import { crossrefToMetadata, fetchCrossrefWork } from './crossref';
 import { fetchDataCiteMetadata } from './datacite';
 import type { Http } from './http';
-import { fetchIetfDraftMetadata } from './ietf';
+import { fetchIetfDraftDoc, fetchIetfDraftMetadata } from './ietf';
+import { rfcStatus } from './ietf-status';
 import { fetchJaLCMetadata } from './jalc';
 import { fetchPageMetadata } from './page-meta';
 import { normalizeKeyPart, urlExists } from './text';
@@ -30,6 +31,10 @@ async function applyRfcRules(http: Http, r: DoiMetadata): Promise<void> {
   r.publisher = 'RFC Editor (IETF)';
   r.country = 'アメリカ';
   r.bibkeySuggestion = 'rfc' + num;
+  r.kind = 'rfc';
+  // 標準化の段階 (Internet Standard など)。取れなくても登録は続ける
+  const doc = await fetchIetfDraftDoc(http, 'rfc' + num).catch(() => null);
+  r.docStatus = doc ? rfcStatus(doc) : '';
 }
 
 export async function fetchDoiMetadata(http: Http, input: string): Promise<DoiMetadata> {

@@ -1,7 +1,7 @@
 import type { CiteState, Entry, GroupKey, Priority, ReadState, SortKey } from '../../shared/types';
 import { CITE_STATES, PRIORITY_LABELS, READ_STATES } from '../../shared/types';
 
-export type ColumnKey = 'star' | 'title' | 'year' | 'venue' | 'core' | 'read' | 'priority' | 'tags' | 'pdf' | 'projects' | 'added' | 'lastOpened';
+export type ColumnKey = 'star' | 'title' | 'year' | 'venue' | 'core' | 'read' | 'priority' | 'status' | 'tags' | 'pdf' | 'projects' | 'added' | 'lastOpened';
 
 export const ALL_COLUMNS: { key: ColumnKey; label: string; sort?: SortKey }[] = [
   { key: 'star', label: '★' },
@@ -9,6 +9,7 @@ export const ALL_COLUMNS: { key: ColumnKey; label: string; sort?: SortKey }[] = 
   { key: 'year', label: '年', sort: 'year' },
   { key: 'venue', label: '会議・誌名', sort: 'venue' },
   { key: 'core', label: 'CORE・IF', sort: 'core' },
+  { key: 'status', label: '状態' },
   { key: 'read', label: '読了', sort: 'read' },
   { key: 'priority', label: '優先度', sort: 'priority' },
   { key: 'tags', label: 'タグ' },
@@ -42,7 +43,9 @@ export function effectiveGroup(by: GroupKey, projectId: number | undefined): Gro
   return by === 'cite' && projectId === undefined ? 'none' : by;
 }
 
+/** 会議名・誌名。論文以外では出さない (種類を変える前の値が残っていても表示しない) */
 export function venueOf(e: Entry): string {
+  if (e.kind !== 'paper') return '';
   return (e.conference || e.journal).trim();
 }
 

@@ -4,7 +4,7 @@ import { insertEntry } from '../../src/worker/db/entries';
 export function emptyInput(over: Partial<EntryInput> = {}): EntryInput {
   return {
     tags: [], title: '', summary: '', url: '', doi: '', year: '', country: '', publisher: '',
-    journal: '', impactFactor: '', conference: '', core: '', bibkey: '', read: '未読', note: '',
+    journal: '', impactFactor: '', conference: '', core: '', bibkey: '', read: '未読', note: '', kind: 'paper', docStatus: '',
     ...over,
   };
 }
@@ -40,6 +40,6 @@ export function makeEntry(over: Partial<Entry> = {}): Entry {
   return {
     id: 1, added: '2026-01-01', tags: [], title: 'T', summary: '', url: '', doi: '', year: '', country: '',
     publisher: '', journal: '', impactFactor: '', conference: '', core: '', bibkey: '', read: '未読', note: '',
-    starred: false, priority: 0, lastOpenedAt: '', cites: {}, attachments: [], ...over,
+    starred: false, priority: 0, kind: 'paper', docStatus: '', lastOpenedAt: '', cites: {}, attachments: [], ...over,
   };
 }

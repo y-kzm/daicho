@@ -1,6 +1,12 @@
 import { parse } from 'csv-parse/sync';
 import { CITE_STATES, READ_STATES } from '../src/shared/types';
 
+/** 種類の振り分け (migrations/0004_entry_kinds.sql と同じ規則) */
+const KIND_RFC_RULE =
+  "lower(doi) LIKE '10.17487/rfc%' OR publisher = 'RFC Editor (IETF)' OR title GLOB 'RFC [0-9]*:*' OR (substr(lower(bibkey), 1, 3) = 'rfc' AND substr(bibkey, 4, 1) GLOB '[0-9]' AND length(ltrim(substr(lower(bibkey), 4), '0123456789')) <= 1 AND length(substr(bibkey, 4)) - length(ltrim(substr(lower(bibkey), 4), '0123456789')) <= 5)";
+const KIND_DRAFT_RULE =
+  "publisher = 'IETF (Internet-Draft)' OR lower(bibkey) GLOB 'draft-[a-z0-9]*-[a-z0-9]*' OR lower(title) GLOB 'draft-*-[0-9][0-9]:*'";
+
 /** layout は旧 GAS 版のカード配置シート。ライブラリ UX 版では使わないが、旧手順の引数を壊さないため受け取って無視する。 */
 export interface SheetCsvs { main: string; tags?: string; projects?: string; layout?: string }
 export interface ImportSummary { entries: number; tags: number; projects: number; cites: number; dateFallbacks: number }
@@ -94,6 +100,11 @@ export function buildImportSql(csvs: SheetCsvs, today: string): { sql: string; s
   for (const [name, id] of tagIds) out.push(`INSERT INTO tags (id, name, sort_order) VALUES (${id}, ${sqlStr(name)}, ${id - 1});`);
   for (const [name, id] of projectIds) out.push(`INSERT INTO projects (id, name, sort_order) VALUES (${id}, ${sqlStr(name)}, ${id - 1});`);
   out.push(...entryTagStmts, ...citeStmts);
+  // 種類の振り分け (migrations/0004_entry_kinds.sql と同じ規則)。旧シートには種類の列が無い
+  out.push(
+    `UPDATE entries SET kind = 'rfc' WHERE ${KIND_RFC_RULE};`,
+    `UPDATE entries SET kind = 'draft' WHERE kind = 'paper' AND (${KIND_DRAFT_RULE});`,
+  );
 
   return {
     sql: out.join('\n') + '\n',

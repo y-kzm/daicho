@@ -9,6 +9,7 @@ import { useToast } from '../state/useToast';
 import { TagPicker } from './dialogs/TagPicker';
 import { VenuePills } from './EntryCard';
 import { DetailFiles } from './library/DetailFiles';
+import { DetailStatus } from './library/DetailStatus';
 import { DetailProjects } from './library/DetailProjects';
 import { toEntryInput } from './library/entryInput';
 import { useEntryActions } from './library/useEntryActions';
@@ -102,6 +103,7 @@ function DetailBody({ e, projectId, onClose, onEdit }: { e: Entry; projectId?: n
         {[e.year, venue].filter(Boolean).join(' · ')}
         <VenuePills e={e} />
       </div>
+      <DetailStatus e={e} />
       <div className="dp-controls">
         <label>読了
           <select className={'read r' + READ_STATES.indexOf(read)} value={read} onChange={(ev) => actions.setRead(e, ev.target.value as ReadState)}>

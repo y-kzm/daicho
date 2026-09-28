@@ -5,6 +5,6 @@ export function toEntryInput(e: Entry): EntryInput {
   return {
     tags: [...e.tags], title: e.title, summary: e.summary, url: e.url, doi: e.doi, year: e.year, country: e.country,
     publisher: e.publisher, journal: e.journal, impactFactor: e.impactFactor, conference: e.conference, core: e.core,
-    bibkey: e.bibkey, read: e.read, note: e.note,
+    bibkey: e.bibkey, read: e.read, note: e.note, kind: e.kind, docStatus: e.docStatus,
   };
 }

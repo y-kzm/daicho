@@ -222,3 +222,22 @@ input[type="checkbox"] { accent-color: var(--accent); }
 }
 .t-pdf:hover { text-decoration: underline; }
 .c-pdf { white-space: nowrap; }
+
+/* ---------- 文献の種類と状態 ---------- */
+.kind-badge {
+  display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 4px; vertical-align: 1px;
+  font-size: 11px; font-weight: 600; line-height: 18px; white-space: nowrap;
+  background: var(--line-soft); color: var(--ink-2);
+}
+.kind-badge.k-rfc { background: var(--accent-soft); color: var(--accent); }
+.kind-badge.k-draft { background: #F6ECD9; color: var(--r-skim); }
+.kind-badge.k-whitepaper { background: #E4F1EA; color: var(--r-done); }
+.t-status { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; }
+.c-status { white-space: nowrap; }
+.dp-status { margin: 0 0 12px; }
+.dp-status-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dp-status-line .kind-badge { margin-right: 0; }
+.dp-status-note {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding: 8px 10px;
+  font-size: 12.5px; line-height: 1.6; color: var(--ink-2); border-radius: var(--radius); background: var(--line-soft);
+}

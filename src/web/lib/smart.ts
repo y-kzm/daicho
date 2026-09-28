@@ -1,5 +1,5 @@
-import type { Entry, FilterQuery, ReadState, SavedFilter } from '../../shared/types';
-import { PRIORITY_LABELS } from '../../shared/types';
+import type { Entry, FilterQuery, KindGroupId, ReadState, SavedFilter } from '../../shared/types';
+import { KIND_GROUPS, KIND_LABELS, PRIORITY_LABELS } from '../../shared/types';
 import { compareBy } from './table';
 
 export type Builtin = 'all' | 'starred' | 'recentAdded' | 'recentOpened' | 'unfiled';
@@ -52,6 +52,7 @@ export function matches(e: Entry, q: FilterQuery, now: Date): boolean {
     const has = (t: string) => e.tags.includes(t);
     if (q.tagMode === 'all' ? !q.tags.every(has) : !q.tags.some(has)) return false;
   }
+  if (q.kinds?.length && !q.kinds.includes(e.kind)) return false;
   const cites = e.cites || {};
   const cite = q.cite;
   if (q.projectId !== undefined) {
@@ -92,12 +93,12 @@ export function countFor(entries: Entry[], q: FilterQuery, now: Date): number {
 }
 
 export function isFiltering(q: FilterQuery): boolean {
-  return !!q.search?.trim() || !!q.read?.length || !!q.tags?.length || q.projectId !== undefined || !!q.cite?.length
+  return !!q.search?.trim() || !!q.read?.length || !!q.tags?.length || q.projectId !== undefined || !!q.cite?.length || !!q.kinds?.length
     || q.yearFrom !== undefined || q.yearTo !== undefined || q.starred !== undefined || !!q.priority?.length || q.unfiled === true;
 }
 
 const FILTER_KEYS = [
-  'search', 'read', 'tags', 'tagMode', 'projectId', 'cite', 'yearFrom', 'yearTo', 'starred', 'priority', 'unfiled', 'sort', 'sortDir', 'groupBy',
+  'search', 'read', 'tags', 'tagMode', 'projectId', 'kinds', 'cite', 'yearFrom', 'yearTo', 'starred', 'priority', 'unfiled', 'sort', 'sortDir', 'groupBy',
 ] as const;
 
 /** 保存フィルタとして送れる形 (既知キーのみ、空の値は落とす) */
@@ -112,7 +113,7 @@ export function toSavedQuery(q: FilterQuery): FilterQuery {
 }
 
 const NARROWING_KEYS = [
-  'search', 'read', 'tags', 'projectId', 'cite', 'yearFrom', 'yearTo', 'starred', 'priority', 'unfiled',
+  'search', 'read', 'tags', 'projectId', 'kinds', 'cite', 'yearFrom', 'yearTo', 'starred', 'priority', 'unfiled',
   'addedWithinDays', 'openedOnly',
 ] as const;
 
@@ -154,6 +155,7 @@ export function describeQuery(q: FilterQuery, projectName: (id: number) => strin
   if (q.read?.length) out.push('読了: ' + q.read.join('・'));
   if (q.tags?.length) out.push('タグ: ' + q.tags.join(q.tagMode === 'all' ? ' かつ ' : ' または '));
   if (q.projectId !== undefined) out.push('プロジェクト: ' + (projectName(q.projectId) ?? '(削除済み)'));
+  if (q.kinds?.length) out.push('種類: ' + q.kinds.map((k) => KIND_LABELS[k]).join('・'));
   if (q.cite?.length) out.push('引用状態: ' + q.cite.join('・'));
   if (q.yearFrom !== undefined || q.yearTo !== undefined) out.push(`年: ${q.yearFrom ?? ''}〜${q.yearTo ?? ''}`);
   if (q.starred !== undefined) out.push(q.starred ? '★ あり' : '★ なし');
@@ -166,12 +168,19 @@ export function describeQuery(q: FilterQuery, projectName: (id: number) => strin
 export type LibrarySource =
   | { kind: 'builtin'; id: Builtin }
   | { kind: 'saved'; id: number }
-  | { kind: 'tag'; name: string };
+  | { kind: 'tag'; name: string }
+  /** 種類の枠 (論文 / 標準文書 / 資料) */
+  | { kind: 'kinds'; id: KindGroupId };
+
+export function kindGroup(id: KindGroupId): (typeof KIND_GROUPS)[number] {
+  return KIND_GROUPS.find((g) => g.id === id) ?? KIND_GROUPS[0];
+}
 
 export function sourceQuery(src: LibrarySource, savedFilters: SavedFilter[], now: Date): FilterQuery {
   switch (src.kind) {
     case 'builtin': return { ...DEFAULT_QUERY, ...builtinQuery(src.id, now) };
     case 'saved': return { ...DEFAULT_QUERY, ...(savedFilters.find((f) => f.id === src.id)?.query ?? {}) };
+    case 'kinds': return { ...DEFAULT_QUERY, kinds: [...kindGroup(src.id).kinds] };
     default: return { ...DEFAULT_QUERY, tags: [src.name] };
   }
 }
@@ -180,6 +189,7 @@ export function sourceLabel(src: LibrarySource, savedFilters: SavedFilter[]): st
   switch (src.kind) {
     case 'builtin': return BUILTIN_LABELS[src.id];
     case 'saved': return savedFilters.find((f) => f.id === src.id)?.name ?? '保存フィルタ';
+    case 'kinds': return kindGroup(src.id).label;
     default: return '# ' + src.name;
   }
 }
@@ -188,6 +198,7 @@ export function sameSource(a: LibrarySource, b: LibrarySource): boolean {
   if (a.kind === 'builtin' && b.kind === 'builtin') return a.id === b.id;
   if (a.kind === 'saved' && b.kind === 'saved') return a.id === b.id;
   if (a.kind === 'tag' && b.kind === 'tag') return a.name === b.name;
+  if (a.kind === 'kinds' && b.kind === 'kinds') return a.id === b.id;
   return false;
 }
 
@@ -240,6 +251,10 @@ export function activeFilters(
   if (q.projectId !== undefined && q.projectId !== base.projectId) {
     const name = projectName(q.projectId) ?? '(削除済み)';
     out.push({ key: 'project', label: 'プロジェクト: ' + name, clear: (c) => ({ ...c, projectId: base.projectId }) });
+  }
+  for (const k of q.kinds ?? []) {
+    if (base.kinds?.includes(k)) continue;
+    out.push({ key: 'kind:' + k, label: KIND_LABELS[k], clear: (c) => ({ ...c, kinds: without(c.kinds, k) ?? base.kinds }) });
   }
   for (const s of q.cite ?? []) {
     if (base.cite?.includes(s)) continue;

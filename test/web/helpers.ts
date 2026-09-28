@@ -5,7 +5,7 @@ export function entry(over: Partial<Entry> & { id: number }): Entry {
   return {
     added: '2026-01-01', tags: [], title: 'T' + over.id, summary: '', url: '', doi: '', year: '', country: '',
     publisher: '', journal: '', impactFactor: '', conference: '', core: '', bibkey: '', read: '未読', note: '',
-    starred: false, priority: 0, lastOpenedAt: '', cites: {}, attachments: [], ...over,
+    starred: false, priority: 0, kind: 'paper', docStatus: '', lastOpenedAt: '', cites: {}, attachments: [], ...over,
   };
 }
 

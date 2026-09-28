@@ -1,5 +1,6 @@
 import { useMemo, useRef } from 'react';
 import type { EntryProjectInput } from '../../shared/types';
+import { defaultKind } from '../lib/kinds';
 import { useRoute } from '../lib/router';
 import { useAppData } from '../state/AppDataContext';
 import { useDialogs } from '../state/DialogContext';
@@ -23,7 +24,7 @@ export function AppDialogs() {
   // await の後で「今のダイアログ」を見るため (レンダー時の dialog はクロージャに固定される)
   const dialogRef = useRef(dialog);
   dialogRef.current = dialog;
-  const { query, setDetailId, selectSource } = useLibrary();
+  const { query, source, setDetailId, selectSource } = useLibrary();
   const entry = dialog.kind === 'entry' && dialog.id !== null ? data.entries.find((e) => e.id === dialog.id) ?? null : null;
   // プロジェクト画面ではライブラリの絞り込みタグを引き継がない
   const newTags = dialog.kind === 'entry' && dialog.id === null && route.name !== 'project' ? query.tags ?? [] : [];
@@ -46,6 +47,7 @@ export function AppDialogs() {
   return (
     <>
       <EntryDialog open={dialog.kind === 'entry'} entry={entry} initialTags={newTags} initialProjects={newProjects}
+        initialKind={route.name === 'library' ? defaultKind(source) : 'paper'}
         onClose={close} onShowPrompt={showPrompt} onSaved={onEntrySaved} />
       <BibtexDialog open={dialog.kind === 'bibtex'} ids={dialog.kind === 'bibtex' ? dialog.ids : []} onClose={close} />
       <BulkTagDialog open={dialog.kind === 'aiTags'} ids={dialog.kind === 'aiTags' ? dialog.ids : []} onClose={close} />

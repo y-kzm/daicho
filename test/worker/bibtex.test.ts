@@ -11,7 +11,7 @@ function entry(over: Partial<Entry>): Entry {
   return {
     id: 1, added: '2026-01-01', tags: [], title: 'A Study with IPv6', summary: '', url: '', doi: '', year: '2024',
     country: '', publisher: '', journal: '', impactFactor: '', conference: '', core: '', bibkey: '', read: '未読',
-    note: '', starred: false, priority: 0, lastOpenedAt: '', cites: {}, attachments: [], ...over,
+    note: '', starred: false, priority: 0, kind: 'paper', docStatus: '', lastOpenedAt: '', cites: {}, attachments: [], ...over,
   };
 }
 
@@ -69,5 +69,38 @@ describe('exportBibtex', () => {
     await expect(exportBibtex(http, [])).rejects.toThrow('対象のエントリがありません。');
     const many = Array.from({ length: BIBTEX_MAX + 1 }, (_, i) => entry({ id: i + 1 }));
     await expect(exportBibtex(http, many)).rejects.toThrow(`一度に出力できるのは ${BIBTEX_MAX} 件までです`);
+  });
+});
+
+describe('buildManualBibtex by kind', () => {
+  it('writes RFCs and drafts as technical reports with their number', () => {
+    const rfc = buildManualBibtex(entry({ kind: 'rfc', bibkey: 'rfc791', title: 'RFC 791: Internet Protocol', year: '1981', publisher: 'RFC Editor (IETF)' }));
+    expect(rfc).toContain('@techreport{rfc791,');
+    expect(rfc).toContain('title = {Internet Protocol}');
+    expect(rfc).toContain('type = {RFC}');
+    expect(rfc).toContain('number = {791}');
+    expect(rfc).toContain('institution = {RFC Editor}');
+    expect(rfc).not.toContain('publisher');
+    const draft = buildManualBibtex(entry({ kind: 'draft', bibkey: 'draft-ietf-6man-sids', title: 'draft-ietf-6man-sids-05: SRv6 SIDs', year: '2024' }));
+    expect(draft).toContain('@techreport{draft-ietf-6man-sids,');
+    expect(draft).toContain('title = {SRv6 SIDs}');
+    expect(draft).toContain('type = {Internet-Draft}');
+    expect(draft).toContain('number = {draft-ietf-6man-sids-05}');
+  });
+  it('keeps a title that has no number prefix, and omits an unknown number', () => {
+    const bib = buildManualBibtex(entry({ kind: 'rfc', bibkey: 'ipv6spec', title: 'IPv6 Specification' }));
+    expect(bib).toContain('title = {IPv6 Specification}');
+    expect(bib).not.toContain('number = ');
+  });
+  it('writes white papers as misc and ignores venue values left from before', () => {
+    const bib = buildManualBibtex(entry({ kind: 'whitepaper', bibkey: 'wp', title: 'State of IPv6', journal: 'Old Journal', conference: 'Old Conf', publisher: 'Example Networks' }));
+    expect(bib).toContain('@misc{wp,');
+    expect(bib).toContain('howpublished = {Example Networks}');
+    expect(bib).not.toContain('Old Journal');
+    expect(bib).not.toContain('Old Conf');
+  });
+  it('is unchanged for papers', () => {
+    expect(buildManualBibtex(entry({ bibkey: 'k', conference: 'IMC', publisher: 'ACM' }))).toContain('@inproceedings{k,');
+    expect(buildManualBibtex(entry({ bibkey: 'k', conference: 'IMC', publisher: 'ACM' }))).toContain('publisher = {ACM}');
   });
 });

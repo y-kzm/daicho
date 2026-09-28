@@ -1,5 +1,5 @@
-import type { CiteState, FilterQuery, GroupKey, Priority, ReadState, SavedFilter, SortKey } from '../../shared/types';
-import { CITE_STATES, PRIORITIES, READ_STATES } from '../../shared/types';
+import type { CiteState, EntryKind, FilterQuery, GroupKey, Priority, ReadState, SavedFilter, SortKey } from '../../shared/types';
+import { CITE_STATES, ENTRY_KINDS, PRIORITIES, READ_STATES } from '../../shared/types';
 import { AppError, notFound } from '../errors';
 import { idList, sameIdSet, str } from '../validate';
 import { FILTERS_SQL, rowToFilter, type FilterRow } from './app-data';
@@ -60,6 +60,7 @@ export function parseFilterQuery(v: unknown): FilterQuery {
         break;
       }
       case 'cite': q.cite = listOf<CiteState>(CITE_STATES, val); break;
+      case 'kinds': q.kinds = listOf<EntryKind>(ENTRY_KINDS, val); break;
       case 'yearFrom': q.yearFrom = int(val); break;
       case 'yearTo': q.yearTo = int(val); break;
       case 'starred': q.starred = bool(val); break;

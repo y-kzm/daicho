@@ -1,6 +1,6 @@
 import type { MouseEvent } from 'react';
 import type { Entry } from '../../shared/types';
-import { PRIORITY_LABELS } from '../../shared/types';
+import { KIND_BADGES, KIND_LABELS, PRIORITY_LABELS } from '../../shared/types';
 
 export function corePillClass(r: string): string {
   if (r.toLowerCase() === 'n/a') return 'na';
@@ -10,6 +10,8 @@ export function corePillClass(r: string): string {
 
 /** IF / CORE のピル (カード・テーブル・詳細パネルで共用) */
 export function VenuePills({ e }: { e: Entry }) {
+  // IF と CORE は論文の評価。ほかの種類では、値が残っていても出さない
+  if (e.kind !== 'paper') return null;
   const impact = e.impactFactor.trim();
   const core = e.core.trim();
   return (
@@ -43,7 +45,7 @@ interface Props {
 /** カード表示の 1 件。編集・削除は詳細パネルから行う (ドラッグ配置は廃止) */
 export function EntryCard({ e, selected, focused, selectable = false, onClick, onTagClick }: Props) {
   const read = e.read || '未読';
-  const venue = [e.journal, e.conference].filter(Boolean);
+  const venue = e.kind === 'paper' ? [e.journal, e.conference].filter(Boolean) : [];
   if (!venue.length && e.publisher) venue.push(e.publisher);
   return (
     <div className={'entry r' + read + (selected ? ' selected' : '') + (focused ? ' focused' : '')}
@@ -55,15 +57,17 @@ export function EntryCard({ e, selected, focused, selectable = false, onClick, o
           {e.starred ? '★' : '☆'}
         </span>
         <div className="e-title">
+          {e.kind !== 'paper' && <span className={'kind-badge k-' + e.kind} title={KIND_LABELS[e.kind]}>{KIND_BADGES[e.kind]}</span>}
           {e.title}
           {e.year && <span className="yr mono">{e.year}</span>}
         </div>
         {e.priority > 0 && <span className={'prio p' + e.priority}>{PRIORITY_LABELS[e.priority]}</span>}
         <span className={'read-label r' + read}>{read}</span>
       </div>
-      {(venue.length > 0 || e.impactFactor || e.core) && (
+      {(venue.length > 0 || e.impactFactor || e.core || e.docStatus) && (
         <div className="e-venue">
           {venue.length > 0 && <span>{venue.join(' / ')}</span>}
+          {e.docStatus && <span className="t-status">{e.docStatus}</span>}
           <VenuePills e={e} />
         </div>
       )}

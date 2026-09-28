@@ -1,5 +1,5 @@
-import type { BulkOp, CiteState, EntryInput, EntryProjectInput, Priority, ReadState } from '../shared/types';
-import { BULK_MAX, CITE_STATES, ENTRY_PROJECTS_MAX, PRIORITIES, READ_STATES } from '../shared/types';
+import type { BulkOp, CiteState, EntryInput, EntryKind, EntryProjectInput, Priority, ReadState } from '../shared/types';
+import { BULK_MAX, CITE_STATES, ENTRY_KINDS, ENTRY_PROJECTS_MAX, PRIORITIES, READ_STATES } from '../shared/types';
 import { AppError } from './errors';
 
 export function str(v: unknown): string {
@@ -34,6 +34,16 @@ export function splitTags(v: unknown): string[] {
   return out;
 }
 
+export const DOC_STATUS_MAX = 80;
+
+/** 省略は論文。知らない値は不正 (黙って論文にすると、別枠から消えたように見える) */
+export function parseKind(v: unknown): EntryKind {
+  const s = str(v);
+  if (!s) return 'paper';
+  if (!(ENTRY_KINDS as readonly string[]).includes(s)) throw new AppError('文献の種類が不正です。');
+  return s as EntryKind;
+}
+
 export function parseEntryInput(body: unknown): EntryInput {
   const b = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
   const title = str(b.title);
@@ -55,6 +65,8 @@ export function parseEntryInput(body: unknown): EntryInput {
     bibkey: str(b.bibkey),
     read: (READ_STATES as readonly string[]).includes(read) ? read : '未読',
     note: str(b.note),
+    kind: parseKind(b.kind),
+    docStatus: str(b.docStatus).slice(0, DOC_STATUS_MAX),
   };
 }
 

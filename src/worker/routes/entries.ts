@@ -3,11 +3,11 @@ import { getAppData } from '../db/app-data';
 import { fileIdsForEntries } from '../db/attachments';
 import { applyMerge } from '../db/merge';
 import {
-  bulkApply, deleteEntry, ensureUniqueBibkey, insertEntry, setCiteState, setFlags, setReadState, touchEntry, updateEntry,
+  bulkApply, deleteEntry, ensureUniqueBibkey, getEntry, insertEntry, setCiteState, setFlags, setReadState, touchEntry, updateEntry,
 } from '../db/entries';
 import { todayJst } from '../date';
 import type { Env } from '../env';
-import { AppError } from '../errors';
+import { AppError, notFound } from '../errors';
 import { generateBibkey } from '../services/bibtex';
 import { TRASH_MAX, trashBestEffort } from '../services/drive-session';
 import {
@@ -53,7 +53,15 @@ entries.post('/', async (c) => {
 
 entries.put('/:id', async (c) => {
   const id = parseIdParam(c.req.param('id'));
-  const input = parseEntryInput(await jsonBody(c));
+  const body = await jsonBody(c);
+  const input = parseEntryInput(body);
+  // 種類と状態を送らない要求 (更新前から開いていた画面など) では、保存済みの値を保つ
+  if (body.kind === undefined || body.docStatus === undefined) {
+    const current = await getEntry(c.env.DB, id);
+    if (!current) throw notFound('エントリ');
+    if (body.kind === undefined) input.kind = current.kind;
+    if (body.docStatus === undefined) input.docStatus = current.docStatus;
+  }
   if (!input.bibkey) input.bibkey = await generateBibkey(httpFor(c.env), input);
   input.bibkey = await ensureUniqueBibkey(c.env.DB, input.bibkey, id);
   await updateEntry(c.env.DB, id, input);

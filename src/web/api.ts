@@ -1,6 +1,6 @@
 import type {
   AppData, AttachmentKind, BulkOp, CiteState, CoreResult, DoiMetadata, DriveStatus, DuplicateGroup, EntryInput, EntryProjectInput,
-  FilterQuery, LlmInput, LlmProvider, UploadSession,
+  FilterQuery, IetfStatus, LlmInput, LlmProvider, UploadSession,
   Priority, ReadState, SummaryPromptResult, SummaryResult, TagProposal,
 } from '../shared/types';
 
@@ -116,6 +116,8 @@ export const api = {
   // メタデータ・LLM
   doi: (input: string) => call<DoiMetadata>('POST', '/metadata/doi', { input }, 60000),
   core: (query: string) => call<CoreResult>('POST', '/metadata/core', { query }, 60000),
+  /** RFC / Internet-Draft の今の状態を調べて、エントリに保存する */
+  ietfStatus: (entryId: number) => call<IetfStatus>('POST', '/metadata/ietf-status', { entryId }, 60000),
   llmPrompt: (input: LlmInput) => call<SummaryPromptResult>('POST', '/llm/prompt', input, 60000),
   llmSummary: (input: LlmInput) => call<SummaryResult>('POST', '/llm/summary', input, LONG_TIMEOUT_MS),
   llmTags: (input: LlmInput) => call<{ tags: string[] }>('POST', '/llm/tags', input, LONG_TIMEOUT_MS),

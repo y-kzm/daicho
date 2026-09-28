@@ -1,5 +1,5 @@
-import type { AppData, Attachment, CiteInfo, CiteState, Entry, FilterQuery, Priority, Project, SavedFilter } from '../../shared/types';
-import { CITE_STATES, CORE_URL, JCR_URL, PRIORITIES, READ_STATES } from '../../shared/types';
+import type { AppData, Attachment, CiteInfo, CiteState, Entry, EntryKind, FilterQuery, Priority, Project, SavedFilter } from '../../shared/types';
+import { CITE_STATES, CORE_URL, ENTRY_KINDS, JCR_URL, PRIORITIES, READ_STATES } from '../../shared/types';
 import { ATTACHMENTS_SQL, rowToAttachment, type AttachmentRow } from './attachments';
 
 export interface EntryRow {
@@ -19,6 +19,8 @@ export interface EntryRow {
   bibkey: string;
   read: string;
   note: string;
+  kind: string;
+  doc_status: string;
   starred: number;
   priority: number;
   last_opened_at: string;
@@ -52,6 +54,11 @@ export const PROJECTS_SQL =
 /** 保存フィルタ一覧。filters.ts の listFilters と共有する */
 export const FILTERS_SQL = 'SELECT id, name, sort_order, query FROM saved_filters ORDER BY sort_order, id';
 
+/** 知らない値は論文として読む */
+export function toKind(v: unknown): EntryKind {
+  return (ENTRY_KINDS as readonly string[]).includes(String(v)) ? (v as EntryKind) : 'paper';
+}
+
 /** 0〜3 以外は 0 (なし) として読む */
 export function toPriority(v: unknown): Priority {
   const n = Number(v);
@@ -79,6 +86,8 @@ export function rowToEntry(
     bibkey: r.bibkey,
     read: r.read || '未読',
     note: r.note,
+    kind: toKind(r.kind),
+    docStatus: r.doc_status ?? '',
     starred: r.starred === 1,
     priority: toPriority(r.priority),
     lastOpenedAt: r.last_opened_at,

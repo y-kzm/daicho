@@ -1,12 +1,18 @@
 import type { DoiMetadata } from '../../shared/types';
 import { parseJson, type Http } from './http';
+import { draftStatus } from './ietf-status';
 import { urlExists } from './text';
 
 export interface IetfDoc {
+  name?: string;
   title?: string;
   rev?: string;
   time?: string;
-  rev_history?: { rev?: string; published?: string }[];
+  /** I-D: Active / Expired / Replaced / RFC。RFC: Published */
+  state?: string | null;
+  std_level?: string | null;
+  expires?: string | null;
+  rev_history?: { name?: string; rev?: string; published?: string }[];
   authors?: { name?: string }[];
   abstract?: string;
 }
@@ -48,5 +54,7 @@ export async function fetchIetfDraftMetadata(http: Http, raw: string): Promise<D
     url,
     authors: (d.authors || []).map((a) => a.name).filter(Boolean).join('; '),
     bibkeySuggestion: name,
+    kind: 'draft',
+    docStatus: draftStatus(d, useRev).docStatus,
   };
 }

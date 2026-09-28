@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import type { GroupKey, SortKey } from '../../../shared/types';
+import { columnsFor, fixedColumns } from '../../lib/kinds';
 import { applyQuery, isFilteringBeyond, sourceQuery } from '../../lib/smart';
 import { STORAGE_KEYS } from '../../lib/storage';
 import {
@@ -44,7 +45,8 @@ function LibraryInner() {
   const [collapsedList, setCollapsedList] = useSessionState<string[]>(STORAGE_KEYS.collapsed, []);
   const projectId = scope ?? undefined;
   const allColumns = Array.isArray(storedColumns) ? storedColumns : DEFAULT_COLUMNS;
-  const columns = projectId === undefined ? allColumns : allColumns.filter((c) => !HIDDEN_IN_PROJECT.includes(c));
+  const shown = columnsFor(allColumns, source);
+  const columns = projectId === undefined ? shown : shown.filter((c) => !HIDDEN_IN_PROJECT.includes(c));
   const extraColumns = useMemo(() => (projectId === undefined ? [] : scopeColumns(projectId)), [projectId]);
 
   const now = useMemo(() => new Date(), [data]);
@@ -89,7 +91,7 @@ function LibraryInner() {
             <ViewControls view={view} onView={setView} groupBy={groupBy} groupKeys={groupKeysFor(projectId)}
               onGroupBy={(g) => setQuery((q) => ({ ...q, groupBy: g }))}
               sort={sort} onSort={(s) => setQuery((q) => ({ ...q, sort: s.key, sortDir: s.dir }))}
-              columns={allColumns} hiddenColumns={projectId === undefined ? [] : HIDDEN_IN_PROJECT} onColumns={setColumns} />
+              columns={allColumns} hiddenColumns={[...fixedColumns(source), ...(projectId === undefined ? [] : HIDDEN_IN_PROJECT)]} onColumns={setColumns} />
             {projectId !== undefined && (
               <AddEntryPicker projectId={projectId} label="ライブラリから追加" onPicked={(ids) => { if (ids[0] !== undefined) openDetail(ids[0]); }} />
             )}

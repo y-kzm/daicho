@@ -5,7 +5,7 @@ import { entryUpdateStatement, getEntriesByIds } from './entries';
 import { ensureTagStatements, entryTagStatements } from './tags';
 
 type FillKey =
-  | 'summary' | 'url' | 'doi' | 'year' | 'country' | 'publisher' | 'journal' | 'impactFactor' | 'conference' | 'core';
+  | 'summary' | 'url' | 'doi' | 'year' | 'country' | 'publisher' | 'journal' | 'impactFactor' | 'conference' | 'core' | 'docStatus';
 
 /** 仕様 §4 の統合規則で keep に removed を畳み込んだ結果を返す。引数は変更しない。 */
 export function mergeEntries(
@@ -39,6 +39,9 @@ export function mergeEntries(
     bibkey: keep.bibkey,
     read: keep.read,
     note,
+    // 残す側が論文で、相手が RFC などの場合は、相手の種類を引き継ぐ (状態だけが残るのを防ぐ)
+    kind: keep.kind !== 'paper' ? keep.kind : removed.find((r) => r.kind !== 'paper')?.kind ?? 'paper',
+    docStatus: fill('docStatus'),
   };
   const starred = keep.starred || removed.some((r) => r.starred);
   const priority = Math.max(keep.priority, ...removed.map((r) => r.priority)) as Priority;

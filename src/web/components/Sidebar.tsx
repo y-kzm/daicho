@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Project } from '../../shared/types';
+import { KIND_GROUPS } from '../../shared/types';
 import { sortByOrder } from '../lib/order';
 import { navigate, withScope, type Route } from '../lib/router';
 import { BUILTIN_LABELS, BUILTINS, builtinQuery, countFor, sameSource, type Builtin, type LibrarySource } from '../lib/smart';
@@ -93,6 +94,12 @@ export function Sidebar({ route }: { route: Route }) {
       {(inProject ? SCOPED_BUILTINS : BUILTINS).map((b) => (
         <SideItem key={b} label={BUILTIN_LABELS[b]} count={count(builtinQuery(b, now))}
           on={isOn({ kind: 'builtin', id: b })} onClick={() => go({ kind: 'builtin', id: b })} />
+      ))}
+
+      <h3>種類</h3>
+      {KIND_GROUPS.map((g) => (
+        <SideItem key={g.id} label={g.label} count={count({ kinds: [...g.kinds] })}
+          on={isOn({ kind: 'kinds', id: g.id })} onClick={() => go({ kind: 'kinds', id: g.id })} />
       ))}
 
       <h3>保存フィルタ</h3>

@@ -12,6 +12,32 @@ export const JCR_URL =
   'https://jcr.clarivate.com/jcr/home?app=jcr&Init=Yes&authCode=null&SrcApp=IC2LS';
 export const CORE_URL = 'https://portal.core.edu.au/conf-ranks/';
 
+/** 文献の種類。論文以外も同じ台帳で管理する */
+export const ENTRY_KINDS = ['paper', 'rfc', 'draft', 'whitepaper', 'other'] as const;
+export type EntryKind = (typeof ENTRY_KINDS)[number];
+export const KIND_LABELS: Record<EntryKind, string> = {
+  paper: '論文', rfc: 'RFC', draft: 'Internet-Draft', whitepaper: 'ホワイトペーパー', other: 'その他の資料',
+};
+/** 一覧やカードに出す短い印 (論文には出さない) */
+export const KIND_BADGES: Record<EntryKind, string> = { paper: '', rfc: 'RFC', draft: 'I-D', whitepaper: 'WP', other: '資料' };
+
+/** サイドバーの入口。種類をまとめて 3 つの枠にする */
+export const KIND_GROUPS = [
+  { id: 'papers', label: '論文', kinds: ['paper'] },
+  { id: 'standards', label: '標準文書 (RFC・I-D)', kinds: ['rfc', 'draft'] },
+  { id: 'docs', label: '資料', kinds: ['whitepaper', 'other'] },
+] as const satisfies readonly { id: string; label: string; kinds: readonly EntryKind[] }[];
+export type KindGroupId = (typeof KIND_GROUPS)[number]['id'];
+
+/** 状態の入力候補 (自由入力もできる) */
+export const DOC_STATUS_HINTS: Record<EntryKind, readonly string[]> = {
+  paper: [],
+  rfc: ['Internet Standard', 'Proposed Standard', 'Draft Standard', 'Best Current Practice', 'Informational', 'Experimental', 'Historic'],
+  draft: ['有効', '失効', '置き換え済み', 'RFC として発行済み'],
+  whitepaper: ['公開中', '改訂あり', '公開終了'],
+  other: [],
+};
+
 export const ATTACHMENT_KINDS = ['本文', '補足資料', 'スライド', 'その他'] as const;
 export type AttachmentKind = (typeof ATTACHMENT_KINDS)[number];
 /** 1 ファイルの上限 (100 MB) */
@@ -65,6 +91,9 @@ export interface Entry {
   bibkey: string;
   read: string;
   note: string;
+  kind: EntryKind;
+  /** 標準文書などの状態 (例: Internet Standard、有効、失効)。論文では空 */
+  docStatus: string;
   starred: boolean;
   priority: Priority;
   lastOpenedAt: string;
@@ -103,6 +132,7 @@ export interface FilterQuery {
   tags?: string[];
   tagMode?: 'any' | 'all';
   projectId?: number;
+  kinds?: EntryKind[];
   cite?: CiteState[];
   yearFrom?: number;
   yearTo?: number;
@@ -153,6 +183,20 @@ export interface DoiMetadata {
   url: string;
   authors: string;
   bibkeySuggestion: string;
+  /** 判別できた場合だけ入る (RFC・I-D) */
+  kind?: EntryKind;
+  docStatus?: string;
+}
+
+/** IETF の文書の現在の状態 (POST /api/metadata/ietf-status) */
+export interface IetfStatus {
+  docStatus: string;
+  /** 登録している版より新しい I-D の名前 (例: draft-ietf-6man-xxx-07) */
+  newerDraft?: string;
+  /** I-D が RFC になっている場合の番号 */
+  rfcNumber?: number;
+  /** 利用者向けの 1 文 */
+  message: string;
 }
 
 export interface CoreCandidate {

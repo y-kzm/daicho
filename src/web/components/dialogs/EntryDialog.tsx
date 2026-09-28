@@ -1,8 +1,9 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { flushSync } from 'react-dom';
-import type { CoreResult, Entry, EntryInput, EntryProjectInput, LlmProvider } from '../../../shared/types';
-import { READ_STATES } from '../../../shared/types';
+import type { CoreResult, Entry, EntryInput, EntryKind, EntryProjectInput, LlmProvider } from '../../../shared/types';
+import { DOC_STATUS_HINTS, ENTRY_KINDS, KIND_LABELS, READ_STATES } from '../../../shared/types';
 import { api } from '../../api';
+import { hasVenue } from '../../lib/kinds';
 import { sortByOrder } from '../../lib/order';
 import { autofillVenueRatings, buildVenueMaps, coreQueryHint } from '../../lib/venue';
 import { useAppData } from '../../state/AppDataContext';
@@ -16,8 +17,9 @@ import { TagPicker } from './TagPicker';
 export interface EntryForm {
   doi: string; title: string; summary: string; year: string; country: string; publisher: string; journal: string;
   impactFactor: string; conference: string; core: string; url: string; bibkey: string; read: string; note: string;
+  docStatus: string;
 }
-const FIELDS = ['doi', 'title', 'summary', 'year', 'country', 'publisher', 'journal', 'impactFactor', 'conference', 'core', 'url', 'bibkey', 'read', 'note'] as const;
+const FIELDS = ['doi', 'title', 'summary', 'year', 'country', 'publisher', 'journal', 'impactFactor', 'conference', 'core', 'url', 'bibkey', 'read', 'note', 'docStatus'] as const;
 
 function toForm(e: Entry | null): EntryForm {
   const f = {} as EntryForm;
@@ -31,6 +33,8 @@ interface Props {
   initialTags: string[];
   /** 新規追加のときに選択済みにするプロジェクト (開いているプロジェクト) */
   initialProjects: EntryProjectInput[];
+  /** 新規追加のときの種類 (開いている種類の枠に合わせる) */
+  initialKind: EntryKind;
   onClose: () => void;
   /** 保存と再読み込みの完了後に呼ぶ。projectIds は新規追加で入れたプロジェクト */
   onSaved: (id: number, isNew: boolean, projectIds: number[]) => void;
@@ -45,11 +49,12 @@ export function EntryDialog(props: Props) {
   );
 }
 
-function EntryDialogBody({ entry, initialTags, initialProjects, onClose, onSaved, onShowPrompt }: Props) {
+function EntryDialogBody({ entry, initialTags, initialProjects, initialKind, onClose, onSaved, onShowPrompt }: Props) {
   const { data, reload } = useAppData();
   const toast = useToast();
   const [f, setF] = useState<EntryForm>(() => toForm(entry));
   const [tags, setTags] = useState<string[]>(() => (entry ? [...entry.tags] : [...initialTags]));
+  const [kind, setKind] = useState<EntryKind>(entry ? entry.kind : initialKind);
   const [projects, setProjects] = useState<EntryProjectInput[]>(() => (entry ? [] : [...initialProjects]));
   // 追加先の候補: アーカイブしていないものと、選択済みのもの (アーカイブ済みのプロジェクトを開いている場合)
   const projectChoices = useMemo(
@@ -95,10 +100,12 @@ function EntryDialogBody({ entry, initialTags, initialProjects, onClose, onSaved
           };
           const r = autofillVenueRatings(next, maps);
           filled = r.filled;
-          return { ...next, impactFactor: r.impactFactor, core: r.core };
+          return { ...next, impactFactor: r.impactFactor, core: r.core, docStatus: m.docStatus || cur.docStatus };
         });
       });
-      toast('Crossref から取得しました' + (filled.length ? ' / 既存エントリから ' + filled.join('・') + ' を補完' : ''));
+      // RFC・I-D と判別できたら種類も合わせる。判別できない場合は、選んである種類のまま
+      if (m.kind) setKind(m.kind);
+      toast((m.kind ? KIND_LABELS[m.kind] + ' として取得しました' : 'Crossref から取得しました') + (filled.length ? ' / 既存エントリから ' + filled.join('・') + ' を補完' : ''));
     });
   };
   const fetchCore = () => {
@@ -140,7 +147,10 @@ function EntryDialogBody({ entry, initialTags, initialProjects, onClose, onSaved
     ev.preventDefault();
     const input = {} as Record<string, string>;
     for (const k of FIELDS) input[k] = f[k].trim();
-    const e: EntryInput = { ...(input as unknown as Omit<EntryInput, 'tags'>), tags: [...tags] };
+    // 論文向けの欄は、ほかの種類では画面に出さない。編集前の値は消さずに残す
+    const e: EntryInput = { ...(input as unknown as Omit<EntryInput, 'tags' | 'kind'>), tags: [...tags], kind };
+    // 状態は論文では使わない (種類を論文に戻した場合に、古い値を残さない)
+    if (hasVenue(kind)) e.docStatus = '';
     if (!e.title) { toast('タイトルを入力してください', true); return; }
     const selfId = entry ? entry.id : -1;
     const dup = data.entries.find((x) => x.id !== selfId && (x.title.trim() === e.title || (e.doi && x.doi.trim() === e.doi)));
@@ -173,12 +183,25 @@ function EntryDialogBody({ entry, initialTags, initialProjects, onClose, onSaved
 
   return (
     <form className="inner" onSubmit={submit}>
-      <h2>{entry ? 'エントリを編集' : 'エントリを追加'}</h2>
+      <h2>{entry ? `${KIND_LABELS[kind]}を編集` : `${KIND_LABELS[kind]}を追加`}</h2>
       <div className="grid">
         <div className="inline-btn-row full">
           <label className="field">DOI / URL / RFC番号 / internet-draft名 {text('doi', { placeholder: 'https://doi.org/xxxx' })}</label>
           <button type="button" disabled={!!busy.doi} onClick={fetchDoi}>{busy.doi ? '取得中…' : '自動入力'}</button>
         </div>
+        <label className="field">種類
+          <select name="kind" value={kind} onChange={(ev) => setKind(ev.target.value as EntryKind)}>
+            {ENTRY_KINDS.map((k) => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
+          </select>
+        </label>
+        {hasVenue(kind)
+          ? <span />
+          : (
+            <label className="field">状態
+              {text('docStatus', { list: 'docStatusHints', placeholder: DOC_STATUS_HINTS[kind][0] ? `例: ${DOC_STATUS_HINTS[kind][0]}` : '' })}
+              <datalist id="docStatusHints">{DOC_STATUS_HINTS[kind].map((h) => <option key={h} value={h} />)}</datalist>
+            </label>
+          )}
         <label className="field full">タイトル (必須) {text('title', { required: true })}</label>
         <div className="field full">
           <span className="flabel">概要
@@ -189,8 +212,10 @@ function EntryDialogBody({ entry, initialTags, initialProjects, onClose, onSaved
         </div>
         <label className="field">年 {text('year', { inputMode: 'numeric' })}</label>
         <label className="field">出版国 {text('country')}</label>
-        <label className="field full">出版社 {text('publisher')}</label>
+        <label className="field full">{hasVenue(kind) ? '出版社' : '発行元 (組織名)'} {text('publisher')}</label>
 
+        {hasVenue(kind) && (
+        <>
         <div className="venue-group">
           <div className="vg-head">ジャーナル <a href={data.links.jcr} target="_blank" rel="noopener">Impact Factor を JCR で調べる ↗</a></div>
           <div className="vg-fields">
@@ -210,6 +235,8 @@ function EntryDialogBody({ entry, initialTags, initialProjects, onClose, onSaved
           </div>
           <CoreResults result={core} onPick={(rank) => { set('core', rank); setCore(null); toast('CORE ' + rank + ' を設定しました'); }} />
         </div>
+        </>
+        )}
 
         <label className="field full">URL {text('url', { type: 'url' })}</label>
         <label className="field">BibTeX キー {text('bibkey', { placeholder: '空欄なら第一著者+年で自動生成' })}</label>

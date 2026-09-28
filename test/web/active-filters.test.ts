@@ -95,3 +95,22 @@ describe('normalizeTagMode', () => {
     expect(isFilteringBeyond(next, base)).toBe(false);
   });
 });
+
+describe('kinds', () => {
+  it('shows a chip per added kind and returns to the kinds of the source', () => {
+    expect(labels({ kinds: ['rfc', 'whitepaper'] })).toEqual(['RFC', 'ホワイトペーパー']);
+    const base: FilterQuery = { kinds: ['rfc', 'draft'] };
+    expect(labels({ kinds: ['rfc', 'draft'] }, base)).toEqual([]);
+    const q: FilterQuery = { kinds: ['rfc', 'draft', 'paper'] };
+    const chips = activeFilters(q, base, name);
+    expect(chips.map((c) => c.label)).toEqual(['論文']);
+    expect(chips[0]!.clear(q).kinds).toEqual(['rfc', 'draft']);
+    expect(isFilteringBeyond(chips[0]!.clear(q), base)).toBe(false);
+  });
+  it('keeps a source from losing its own kinds when the last added one is removed', () => {
+    const base: FilterQuery = { kinds: ['paper'] };
+    const q: FilterQuery = { kinds: ['rfc'] };
+    const next = activeFilters(q, base, name)[0]!.clear(q);
+    expect(next.kinds).toEqual(['paper']);
+  });
+});
