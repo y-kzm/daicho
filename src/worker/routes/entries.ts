@@ -42,9 +42,14 @@ entries.post('/oa/check', async (c) => {
   const { items, total } = await uncheckedOa(c.env.DB, OA_BATCH);
   const today = todayJst();
   const found = await lookupOpenAccess(httpFor(c.env), items.map((i) => i.doi), today);
-  const stmts = items.map((i) => oaStatement(c.env.DB, i.id, found.get(normalizeDoi(i.doi)) ?? { status: 'unknown', url: '', license: '', checkedAt: today }));
-  if (stmts.length) await c.env.DB.batch(stmts);
-  return c.json({ checked: items.length, remaining: total - items.length, ...(await getAppData(c.env.DB)) });
+  // DOI の形が読めないものは unknown にする。問い合わせに失敗したものは保存せず、次の判定で調べ直す
+  const done = items.flatMap((i) => {
+    const d = normalizeDoi(i.doi);
+    const oa = d ? found.get(d) : { status: 'unknown' as const, url: '', license: '', checkedAt: today };
+    return oa ? [oaStatement(c.env.DB, i.id, oa)] : [];
+  });
+  if (done.length) await c.env.DB.batch(done);
+  return c.json({ checked: done.length, failed: items.length - done.length, remaining: total - done.length, ...(await getAppData(c.env.DB)) });
 });
 
 entries.post('/merge', async (c) => {
@@ -97,8 +102,8 @@ entries.post('/:id/oa', async (c) => {
   if (!e.doi) throw new AppError('DOI が無いので判定できません。手で設定してください。');
   const today = todayJst();
   if (!normalizeDoi(e.doi)) throw new AppError('DOI の形が正しくないので判定できません。DOI を直すか、手で設定してください。');
-  const oa = (await lookupOpenAccess(httpFor(c.env), [e.doi], today)).get(normalizeDoi(e.doi))
-    ?? { status: 'unknown' as const, url: '', license: '', checkedAt: today };
+  const oa = (await lookupOpenAccess(httpFor(c.env), [e.doi], today)).get(normalizeDoi(e.doi));
+  if (!oa) throw new AppError('OpenAlex から取得できませんでした。時間をおいてやり直してください。', 502);
   await setOpenAccess(c.env.DB, id, oa);
   return c.json({ oa });
 });

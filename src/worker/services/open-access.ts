@@ -2,8 +2,14 @@ import { OA_STATUSES, type OaStatus, type OpenAccess } from '../../shared/types'
 import { AppError } from '../errors';
 import { parseJson, type Http } from './http';
 
-/** 1 回の問い合わせで調べる DOI の数 (OpenAlex の filter で OR できる上限) */
-export const OA_BATCH = 50;
+/**
+ * 1 回の判定で調べる DOI の数。OpenAlex には 1 件ずつ問い合わせる
+ * (まとめて検索する API は、IP アドレスごとの 1 日の予算があり、多くの利用者と IP を共有する Cloudflare からでは使い切られている)。
+ * Workers の無料プランでは、1 回の要求で外へ出せる要求が 50 件までなので、それより少なくする
+ */
+export const OA_BATCH = 40;
+/** 同時に問い合わせる数 */
+const PARALLEL = 8;
 
 interface Work {
   doi?: unknown;
@@ -39,44 +45,32 @@ const FIELDS = 'doi,open_access,best_oa_location';
 
 /**
  * DOI ごとに Open Access を調べる。OpenAlex に無い DOI は unknown にする。
- * 通信に失敗した場合は、保存しないように例外にする。
+ * 通信に失敗した DOI は結果に入れない (保存せず、次の判定で調べ直す)。すべて失敗した場合は例外にする。
  */
 export async function lookupOpenAccess(http: Http, dois: string[], today: string): Promise<Map<string, OpenAccess>> {
   const wanted = [...new Set(dois.map(normalizeDoi).filter(Boolean))];
   if (wanted.length > OA_BATCH) throw new AppError(`一度に調べられるのは ${OA_BATCH} 件までです。`);
   const out = new Map<string, OpenAccess>();
-  if (!wanted.length) return out;
-  // 区切りの記号 (| と ,) を含む DOI は、1 件ずつ問い合わせる
-  const plain = wanted.filter((d) => !/[|,]/.test(d));
-  const odd = wanted.filter((d) => /[|,]/.test(d));
-  const works: Work[] = [];
-  if (plain.length) {
-    const url = `https://api.openalex.org/works?filter=doi:${plain.map(encodeURIComponent).join('|')}&per-page=100&select=${FIELDS}`;
-    const res = await http.get(http.withMailto(url));
-    if (res.status !== 200) throw new AppError('OpenAlex から取得できませんでした。時間をおいてやり直してください。', 502);
-    const body = parseJson<{ results?: Work[] }>(res.text);
-    works.push(...(Array.isArray(body?.results) ? body!.results : []));
-  }
-  for (const d of odd) {
+  let failed = 0;
+  const one = async (d: string): Promise<void> => {
     const res = await http.get(http.withMailto(`https://api.openalex.org/works/doi:${encodeURIComponent(d)}?select=${FIELDS}`));
     if (res.status === 200) {
       const w = parseJson<Work>(res.text);
-      if (w) works.push(w);
-    } else if (res.status !== 404) {
-      throw new AppError('OpenAlex から取得できませんでした。時間をおいてやり直してください。', 502);
+      if (w) out.set(d, toOpenAccess(w, today));
+      else failed++;
+    } else if (res.status === 404) {
+      // arXiv の論文は誰でも読める (OpenAlex に arXiv の DOI が無い場合がある)
+      const arxiv = d.match(/^10\.48550\/arxiv\.(.+)$/)?.[1];
+      out.set(d, arxiv
+        ? { status: 'green', url: `https://arxiv.org/abs/${encodeURIComponent(arxiv).replace(/%2F/g, '/')}`, license: '', checkedAt: today }
+        : { status: 'unknown', url: '', license: '', checkedAt: today });
+    } else {
+      failed++;
     }
-  }
-  for (const w of works) {
-    const d = normalizeDoi(String(w.doi ?? ''));
-    if (wanted.includes(d)) out.set(d, toOpenAccess(w, today));
-  }
-  for (const d of wanted) {
-    if (out.has(d)) continue;
-    // arXiv の論文は誰でも読める (OpenAlex に arXiv の DOI が無い場合がある)
-    const arxiv = d.match(/^10\.48550\/arxiv\.(.+)$/)?.[1];
-    out.set(d, arxiv
-      ? { status: 'green', url: `https://arxiv.org/abs/${encodeURIComponent(arxiv).replace(/%2F/g, '/')}`, license: '', checkedAt: today }
-      : { status: 'unknown', url: '', license: '', checkedAt: today });
+  };
+  for (let i = 0; i < wanted.length; i += PARALLEL) await Promise.all(wanted.slice(i, i + PARALLEL).map(one));
+  if (wanted.length && failed === wanted.length) {
+    throw new AppError('OpenAlex から取得できませんでした。時間をおいてやり直してください。', 502);
   }
   return out;
 }

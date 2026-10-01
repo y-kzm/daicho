@@ -39,6 +39,7 @@ export function SidebarFooter({ route, showStats = true }: { route: Route; showS
         const r = await api.checkOaBatch();
         applyData(r);
         done += r.checked;
+        // 1 件も判定できなかった回が出たら止める (同じものを問い合わせ続けないように)
         if (r.remaining <= 0 || r.checked === 0) break;
       }
       toast(`Open Access を ${done} 件判定しました`);

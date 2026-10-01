@@ -91,8 +91,8 @@ export const api = {
   /** 1 件の Open Access を判定し直す */
   checkOa: (id: number) => call<{ oa: OpenAccess }>('POST', `/entries/${id}/oa`, undefined, 60000),
   setOa: (id: number, status: OaStatus, url: string) => call<{ oa: OpenAccess }>('PUT', `/entries/${id}/oa`, { status, url }),
-  /** 未判定の論文を最大 50 件判定する。remaining が 0 になるまで呼ぶ */
-  checkOaBatch: () => call<AppData & { checked: number; remaining: number }>('POST', '/entries/oa/check', undefined, 60000),
+  /** 未判定の論文を最大 40 件判定する。remaining が 0 になるまで呼ぶ */
+  checkOaBatch: () => call<AppData & { checked: number; failed: number; remaining: number }>('POST', '/entries/oa/check', undefined, 90000),
   merge: (keepId: number, removeIds: number[]) => call<AppData>('POST', '/entries/merge', { keepId, removeIds }),
 
   // プロジェクト (id ベース)
