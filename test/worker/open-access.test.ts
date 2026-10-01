@@ -24,49 +24,56 @@ async function entryOf(id: number): Promise<Entry | undefined> {
 describe('normalizeDoi / toOpenAccess', () => {
   it('compares DOIs in one form', () => {
     expect(normalizeDoi(' https://doi.org/10.1145/ABC ')).toBe('10.1145/abc');
-    expect(normalizeDoi('doi:10.1/x')).toBe('10.1/x');
-    expect(normalizeDoi('http://dx.doi.org/10.1/X')).toBe('10.1/x');
+    expect(normalizeDoi('doi:10.1234/x')).toBe('10.1234/x');
+    expect(normalizeDoi('http://dx.doi.org/10.1234/X')).toBe('10.1234/x');
+    expect(normalizeDoi('https://www.doi.org/10.1038/nature14539')).toBe('10.1038/nature14539');
+    expect(normalizeDoi('doi.org/10.1038/nature14539')).toBe('10.1038/nature14539');
+    expect(normalizeDoi('DOI 10.1038/Nature14539')).toBe('10.1038/nature14539');
+    expect(normalizeDoi('https://doi.org/10.1002%2Fabc')).toBe('10.1002/abc');
+    expect(normalizeDoi('10.1002/(SICI)1097-4571<3::AID>3.0.CO;2-0')).toBe('10.1002/(sici)1097-4571<3::aid>3.0.co;2-0');
+    expect(normalizeDoi('100%')).toBe('');
+    expect(normalizeDoi('https://doi.org/')).toBe('');
   });
   it('maps the OpenAlex fields', () => {
-    expect(toOpenAccess(work('10.1/a', 'gold'), TODAY)).toEqual({ status: 'gold', url: 'https://example.org/10.1/a.pdf', license: 'cc-by', checkedAt: TODAY });
-    expect(toOpenAccess(work('10.1/a', 'green'), TODAY)).toMatchObject({ status: 'green', license: '' });
-    expect(toOpenAccess(work('10.1/a', 'closed'), TODAY)).toEqual({ status: 'closed', url: '', license: '', checkedAt: TODAY });
-    expect(toOpenAccess(work('10.1/a', 'platinum'), TODAY).status).toBe('unknown');
+    expect(toOpenAccess(work('10.1234/a', 'gold'), TODAY)).toEqual({ status: 'gold', url: 'https://example.org/10.1234/a.pdf', license: 'cc-by', checkedAt: TODAY });
+    expect(toOpenAccess(work('10.1234/a', 'green'), TODAY)).toMatchObject({ status: 'green', license: '' });
+    expect(toOpenAccess(work('10.1234/a', 'closed'), TODAY)).toEqual({ status: 'closed', url: '', license: '', checkedAt: TODAY });
+    expect(toOpenAccess(work('10.1234/a', 'platinum'), TODAY).status).toBe('unknown');
     expect(toOpenAccess({ open_access: { oa_status: 'gold', oa_url: 'javascript:alert(1)' } }, TODAY)).toMatchObject({ status: 'gold', url: '' });
   });
 });
 
 describe('lookupOpenAccess', () => {
   it('asks once for many DOIs and marks the missing ones unknown', async () => {
-    const calls = mockFetch([{ match: 'api.openalex.org/works?filter=doi:', body: { results: [work('10.1/a', 'gold'), work('10.1/B', 'closed')] } }]);
-    const r = await lookupOpenAccess(http, ['10.1/A', 'https://doi.org/10.1/b', '10.1/missing', '10.1/a'], TODAY);
+    const calls = mockFetch([{ match: 'api.openalex.org/works?filter=doi:', body: { results: [work('10.1234/a', 'gold'), work('10.1234/B', 'closed')] } }]);
+    const r = await lookupOpenAccess(http, ['10.1234/A', 'https://doi.org/10.1234/b', '10.1234/missing', '10.1234/a'], TODAY);
     expect(calls).toHaveLength(1);
-    expect(calls[0]).toContain('filter=doi:10.1%2Fa|10.1%2Fb|10.1%2Fmissing');
-    expect([...r].map(([d, oa]) => [d, oa.status])).toEqual([['10.1/a', 'gold'], ['10.1/b', 'closed'], ['10.1/missing', 'unknown']]);
+    expect(calls[0]).toContain('filter=doi:10.1234%2Fa|10.1234%2Fb|10.1234%2Fmissing');
+    expect([...r].map(([d, oa]) => [d, oa.status])).toEqual([['10.1234/a', 'gold'], ['10.1234/b', 'closed'], ['10.1234/missing', 'unknown']]);
   });
   it('treats an arXiv DOI that OpenAlex lacks as a preprint anyone can read', async () => {
     mockFetch([{ match: 'filter=doi:', body: { results: [] } }]);
-    const r = await lookupOpenAccess(http, ['10.48550/arXiv.1706.03762', '10.1/none'], TODAY);
+    const r = await lookupOpenAccess(http, ['10.48550/arXiv.1706.03762', '10.1234/none'], TODAY);
     expect(r.get('10.48550/arxiv.1706.03762')).toEqual({ status: 'green', url: 'https://arxiv.org/abs/1706.03762', license: '', checkedAt: TODAY });
-    expect(r.get('10.1/none')!.status).toBe('unknown');
+    expect(r.get('10.1234/none')!.status).toBe('unknown');
   });
   it('asks one by one for DOIs with separators, and fails without saving on errors', async () => {
-    const calls = mockFetch([{ match: 'works/doi:', body: work('10.1/a|b', 'hybrid') }]);
-    expect((await lookupOpenAccess(http, ['10.1/a|b'], TODAY)).get('10.1/a|b')?.status).toBe('hybrid');
-    expect(calls[0]).toContain('works/doi:10.1%2Fa%7Cb');
+    const calls = mockFetch([{ match: 'works/doi:', body: work('10.1234/a|b', 'hybrid') }]);
+    expect((await lookupOpenAccess(http, ['10.1234/a|b'], TODAY)).get('10.1234/a|b')?.status).toBe('hybrid');
+    expect(calls[0]).toContain('works/doi:10.1234%2Fa%7Cb');
     mockFetch([{ match: 'api.openalex.org', status: 500, body: '' }]);
-    await expect(lookupOpenAccess(http, ['10.1/a'], TODAY)).rejects.toThrow(/OpenAlex から取得できません/);
-    await expect(lookupOpenAccess(http, Array.from({ length: 51 }, (_, i) => `10.1/${i}`), TODAY)).rejects.toThrow(/50 件まで/);
+    await expect(lookupOpenAccess(http, ['10.1234/a'], TODAY)).rejects.toThrow(/OpenAlex から取得できません/);
+    await expect(lookupOpenAccess(http, Array.from({ length: 51 }, (_, i) => `10.1234/${i}`), TODAY)).rejects.toThrow(/50 件まで/);
   });
 });
 
 describe('Open Access routes', () => {
   it('checks every unchecked paper with a DOI in batches, skipping documents and papers without DOI', async () => {
-    const paper = await seedEntry(env.DB, { title: 'P', doi: '10.1/a' });
-    const closed = await seedEntry(env.DB, { title: 'C', doi: '10.1/b' });
+    const paper = await seedEntry(env.DB, { title: 'P', doi: '10.1234/a' });
+    const closed = await seedEntry(env.DB, { title: 'C', doi: '10.1234/b' });
     const noDoi = await seedEntry(env.DB, { title: 'N' });
     const rfc = await seedEntry(env.DB, { title: 'RFC 9999', doi: '10.17487/RFC9999', kind: 'rfc' });
-    mockFetch([{ match: 'filter=doi:', body: { results: [work('10.1/a', 'gold'), work('10.1/b', 'closed')] } }]);
+    mockFetch([{ match: 'filter=doi:', body: { results: [work('10.1234/a', 'gold'), work('10.1234/b', 'closed')] } }]);
     const r = await call<AppData & { checked: number; remaining: number } & ErrorBody>('POST', '/api/entries/oa/check');
     expect(r.status).toBe(200);
     expect(r.json).toMatchObject({ checked: 2, remaining: 0 });
@@ -83,17 +90,17 @@ describe('Open Access routes', () => {
   });
 
   it('keeps nothing when OpenAlex fails', async () => {
-    const id = await seedEntry(env.DB, { title: 'P', doi: '10.1/a' });
+    const id = await seedEntry(env.DB, { title: 'P', doi: '10.1234/a' });
     mockFetch([{ match: 'api.openalex.org', status: 503, body: '' }]);
     expect((await call('POST', '/api/entries/oa/check')).status).toBe(502);
     expect((await entryOf(id))!.oa.checkedAt).toBe('');
   });
 
   it('rechecks one paper', async () => {
-    const id = await seedEntry(env.DB, { title: 'P', doi: '10.1/a' });
-    mockFetch([{ match: 'filter=doi:', body: { results: [work('10.1/a', 'green')] } }]);
+    const id = await seedEntry(env.DB, { title: 'P', doi: '10.1234/a' });
+    mockFetch([{ match: 'filter=doi:', body: { results: [work('10.1234/a', 'green')] } }]);
     const r = await call<{ oa: OpenAccess }>('POST', `/api/entries/${id}/oa`);
-    expect(r.json.oa).toMatchObject({ status: 'green', url: 'https://example.org/10.1/a.pdf' });
+    expect(r.json.oa).toMatchObject({ status: 'green', url: 'https://example.org/10.1234/a.pdf' });
     expect((await entryOf(id))!.oa.status).toBe('green');
     const noDoi = await seedEntry(env.DB, { title: 'N' });
     expect((await call<ErrorBody>('POST', `/api/entries/${noDoi}/oa`)).json.error).toContain('DOI が無い');
@@ -114,6 +121,26 @@ describe('Open Access routes', () => {
     const e = (await entryOf(id))!;
     await call('PUT', `/api/entries/${id}`, { ...e, title: 'N2' });
     expect((await entryOf(id))!.oa.status).toBe('gold');
+  });
+
+  it('forgets the result when the DOI or the kind changes, so that the batch checks it again', async () => {
+    const id = await seedEntry(env.DB, { title: 'P', doi: '10.1234/a' });
+    await call('PUT', `/api/entries/${id}/oa`, { status: 'gold', url: '' });
+    const e = (await entryOf(id))!;
+    await call('PUT', `/api/entries/${id}`, { ...e, note: 'memo' });
+    expect((await entryOf(id))!.oa.status).toBe('gold');
+    await call('PUT', `/api/entries/${id}`, { ...e, doi: '10.1234/b' });
+    expect((await entryOf(id))!.oa).toEqual({ status: '', url: '', license: '', checkedAt: '' });
+    await call('PUT', `/api/entries/${id}/oa`, { status: 'gold', url: '' });
+    await call('PUT', `/api/entries/${id}`, { ...e, doi: '10.1234/b', kind: 'whitepaper' });
+    expect((await entryOf(id))!.oa.status).toBe('');
+  });
+
+  it('refuses to check a DOI it cannot read', async () => {
+    const id = await seedEntry(env.DB, { title: 'P', doi: 'https://doi.org/' });
+    const r = await call<ErrorBody>('POST', `/api/entries/${id}/oa`);
+    expect(r.status).toBe(400);
+    expect(r.json.error).toContain('DOI の形');
   });
 
   it('saves the Open Access filter', async () => {

@@ -52,6 +52,13 @@ export async function insertEntry(
 }
 
 /** フォーム項目 (EntryInput のタグ以外) を上書きする文。merge.ts からも使う */
+/** DOI か種類が変わる場合は、Open Access の判定を未判定に戻す文 (古い DOI の結果を残さない。次のまとめての判定で調べ直す) */
+export function oaResetStatement(db: D1Database, id: number, input: EntryInput): D1PreparedStatement {
+  return db
+    .prepare("UPDATE entries SET oa_status = '', oa_url = '', oa_license = '', oa_checked_at = '' WHERE id = ? AND (doi IS NOT ? OR kind IS NOT ?)")
+    .bind(id, input.doi, input.kind);
+}
+
 export function entryUpdateStatement(db: D1Database, id: number, input: EntryInput): D1PreparedStatement {
   const sets = COLS.split(', ').map((c) => `${c} = ?`).join(', ');
   return db.prepare(`UPDATE entries SET ${sets} WHERE id = ?`).bind(...values(input), id);
@@ -61,6 +68,7 @@ export function entryUpdateStatement(db: D1Database, id: number, input: EntryInp
 export async function updateEntry(db: D1Database, id: number, input: EntryInput): Promise<void> {
   await assertExists(db, id);
   await db.batch([
+    oaResetStatement(db, id, input),
     entryUpdateStatement(db, id, input),
     ...ensureTagStatements(db, input.tags),
     ...entryTagStatements(db, id, input.tags),

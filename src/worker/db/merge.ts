@@ -1,7 +1,7 @@
 import type { CiteInfo, Entry, EntryInput, Priority } from '../../shared/types';
 import { AppError, notFound } from '../errors';
 import { assertBulkSize } from '../validate';
-import { entryUpdateStatement, getEntriesByIds } from './entries';
+import { entryUpdateStatement, getEntriesByIds, oaResetStatement } from './entries';
 import { ensureTagStatements, entryTagStatements } from './tags';
 
 type FillKey =
@@ -64,6 +64,7 @@ export async function applyMerge(db: D1Database, keepId: number, removeIds: numb
       .prepare('UPDATE attachments SET entry_id = ? WHERE entry_id IN (SELECT value FROM json_each(?))')
       .bind(keepId, JSON.stringify(rm)),
     ...rm.map((id) => db.prepare('DELETE FROM entries WHERE id = ?').bind(id)),
+    oaResetStatement(db, keepId, m.input),
     entryUpdateStatement(db, keepId, m.input),
     db.prepare('UPDATE entries SET starred = ?, priority = ? WHERE id = ?').bind(m.starred ? 1 : 0, m.priority, keepId),
     ...ensureTagStatements(db, m.input.tags),

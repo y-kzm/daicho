@@ -96,7 +96,9 @@ entries.post('/:id/oa', async (c) => {
   if (!e) throw notFound('エントリ');
   if (!e.doi) throw new AppError('DOI が無いので判定できません。手で設定してください。');
   const today = todayJst();
-  const oa = (await lookupOpenAccess(httpFor(c.env), [e.doi], today)).get(normalizeDoi(e.doi))!;
+  if (!normalizeDoi(e.doi)) throw new AppError('DOI の形が正しくないので判定できません。DOI を直すか、手で設定してください。');
+  const oa = (await lookupOpenAccess(httpFor(c.env), [e.doi], today)).get(normalizeDoi(e.doi))
+    ?? { status: 'unknown' as const, url: '', license: '', checkedAt: today };
   await setOpenAccess(c.env.DB, id, oa);
   return c.json({ oa });
 });

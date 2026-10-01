@@ -13,7 +13,14 @@ interface Work {
 
 /** 比べるための DOI の形 (小文字、前置きなし) */
 export function normalizeDoi(doi: string): string {
-  return doi.trim().toLowerCase().replace(/^https?:\/\/(dx\.)?doi\.org\//, '').replace(/^doi:\s*/, '');
+  let s = doi;
+  try {
+    s = decodeURIComponent(doi);
+  } catch {
+    // % の後ろが数字でない DOI は、そのまま使う
+  }
+  // 前置き (https://www.doi.org/、doi: など) は、DOI の本体 (10. から始まる部分) より前をすべて捨てる
+  return s.trim().toLowerCase().match(/10\.\d{4,9}\/\S+/)?.[0] ?? '';
 }
 
 const webUrl = (v: unknown): string => (typeof v === 'string' && /^https?:\/\/[^\s]+$/i.test(v) && v.length <= 500 ? v : '');
@@ -44,7 +51,7 @@ export async function lookupOpenAccess(http: Http, dois: string[], today: string
   const odd = wanted.filter((d) => /[|,]/.test(d));
   const works: Work[] = [];
   if (plain.length) {
-    const url = `https://api.openalex.org/works?filter=doi:${plain.map(encodeURIComponent).join('|')}&per-page=${OA_BATCH}&select=${FIELDS}`;
+    const url = `https://api.openalex.org/works?filter=doi:${plain.map(encodeURIComponent).join('|')}&per-page=100&select=${FIELDS}`;
     const res = await http.get(http.withMailto(url));
     if (res.status !== 200) throw new AppError('OpenAlex から取得できませんでした。時間をおいてやり直してください。', 502);
     const body = parseJson<{ results?: Work[] }>(res.text);
