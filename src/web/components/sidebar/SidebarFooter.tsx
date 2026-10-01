@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { api } from '../../api';
 import { navigate, type Route } from '../../lib/router';
 import { useAppData } from '../../state/AppDataContext';
@@ -24,8 +25,29 @@ const SERVICES: [string, string, string][] = [
 
 /** showStats: プロジェクトを開いている間は、統計を「このプロジェクト」の中に出すのでここでは出さない */
 export function SidebarFooter({ route, showStats = true }: { route: Route; showStats?: boolean }) {
-  const { data } = useAppData();
+  const { data, applyData } = useAppData();
   const { status, disconnect } = useDrive();
+  const [oaBusy, setOaBusy] = useState('');
+  // DOI があって、まだ Open Access を判定していない論文
+  const unchecked = data.entries.filter((e) => e.kind === 'paper' && e.doi && !e.oa.checkedAt).length;
+  const checkAll = async () => {
+    if (oaBusy) return;
+    let done = 0;
+    try {
+      for (;;) {
+        setOaBusy(`判定中… ${done} 件`);
+        const r = await api.checkOaBatch();
+        applyData(r);
+        done += r.checked;
+        if (r.remaining <= 0 || r.checked === 0) break;
+      }
+      toast(`Open Access を ${done} 件判定しました`);
+    } catch (err) {
+      toast(`${done} 件判定したところで止まりました: ${(err as Error).message}`, true);
+    } finally {
+      setOaBusy('');
+    }
+  };
   const { open } = useDialogs();
   const toast = useToast();
   const askDisconnect = () => open({
@@ -43,6 +65,12 @@ export function SidebarFooter({ route, showStats = true }: { route: Route; showS
         <div className="side-links">
           <a href={api.exportUrl('csv')}>CSV でエクスポート</a>
           <a href={api.exportUrl('json')}>JSON でエクスポート</a>
+          {unchecked > 0 && (
+            <button type="button" className="side-link-btn" disabled={oaBusy !== ''} onClick={() => void checkAll()}
+              title="DOI のある論文が誰でも読めるかを、OpenAlex で調べます">
+              {oaBusy || `Open Access をまとめて判定 (${unchecked} 件)`}
+            </button>
+          )}
           <a href={data.links.jcr} target="_blank" rel="noopener">Journal Citation Reports ↗</a>
           <a href={data.links.core} target="_blank" rel="noopener">CORE Conference Ranks ↗</a>
         </div>

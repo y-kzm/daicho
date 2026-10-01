@@ -1,5 +1,5 @@
 import type { AppData, Attachment, CiteInfo, CiteState, Entry, EntryKind, FilterQuery, Priority, Project, SavedFilter } from '../../shared/types';
-import { CITE_STATES, CORE_URL, ENTRY_KINDS, JCR_URL, PRIORITIES, READ_STATES } from '../../shared/types';
+import { CITE_STATES, CORE_URL, ENTRY_KINDS, JCR_URL, OA_STATUSES, PRIORITIES, READ_STATES, type OaStatus } from '../../shared/types';
 import { ATTACHMENTS_SQL, rowToAttachment, type AttachmentRow } from './attachments';
 
 export interface EntryRow {
@@ -24,6 +24,10 @@ export interface EntryRow {
   starred: number;
   priority: number;
   last_opened_at: string;
+  oa_status?: string;
+  oa_url?: string;
+  oa_license?: string;
+  oa_checked_at?: string;
 }
 
 export interface ProjectRow {
@@ -93,6 +97,10 @@ export function rowToEntry(
     lastOpenedAt: r.last_opened_at,
     cites,
     attachments,
+    oa: {
+      status: (OA_STATUSES as readonly string[]).includes(r.oa_status ?? '') ? (r.oa_status as OaStatus) : '',
+      url: r.oa_url ?? '', license: r.oa_license ?? '', checkedAt: r.oa_checked_at ?? '',
+    },
   };
 }
 

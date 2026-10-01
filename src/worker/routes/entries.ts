@@ -14,6 +14,9 @@ import {
   idList, optBool, optPriority, parseBulkOp, parseEntryInput, parseEntryProjects, parseIdParam, positiveInt, str,
 } from '../validate';
 import { httpFor, jsonBody } from './context';
+import { oaStatement, setOpenAccess, uncheckedOa } from '../db/open-access';
+import { lookupOpenAccess, normalizeDoi, OA_BATCH } from '../services/open-access';
+import { OA_STATUSES, type OaStatus } from '../../shared/types';
 
 const entries = new Hono<{ Bindings: Env }>();
 
@@ -32,6 +35,16 @@ entries.post('/bulk', async (c) => {
   await bulkApply(c.env.DB, ids, op);
   const driveLeft = await trashBestEffort(c.env, files);
   return c.json({ ...(await getAppData(c.env.DB)), ...(driveLeft > 0 ? { driveLeft } : {}) });
+});
+
+// Open Access をまだ判定していない論文を、最大 OA_BATCH 件ずつ判定する。画面は remaining が 0 になるまで呼ぶ
+entries.post('/oa/check', async (c) => {
+  const { items, total } = await uncheckedOa(c.env.DB, OA_BATCH);
+  const today = todayJst();
+  const found = await lookupOpenAccess(httpFor(c.env), items.map((i) => i.doi), today);
+  const stmts = items.map((i) => oaStatement(c.env.DB, i.id, found.get(normalizeDoi(i.doi)) ?? { status: 'unknown', url: '', license: '', checkedAt: today }));
+  if (stmts.length) await c.env.DB.batch(stmts);
+  return c.json({ checked: items.length, remaining: total - items.length, ...(await getAppData(c.env.DB)) });
 });
 
 entries.post('/merge', async (c) => {
@@ -74,6 +87,31 @@ entries.delete('/:id', async (c) => {
   await deleteEntry(c.env.DB, id);
   const driveLeft = await trashBestEffort(c.env, files);
   return c.json(driveLeft > 0 ? { driveLeft } : {});
+});
+
+// 1 件を判定し直す
+entries.post('/:id/oa', async (c) => {
+  const id = parseIdParam(c.req.param('id'));
+  const e = await getEntry(c.env.DB, id);
+  if (!e) throw notFound('エントリ');
+  if (!e.doi) throw new AppError('DOI が無いので判定できません。手で設定してください。');
+  const today = todayJst();
+  const oa = (await lookupOpenAccess(httpFor(c.env), [e.doi], today)).get(normalizeDoi(e.doi))!;
+  await setOpenAccess(c.env.DB, id, oa);
+  return c.json({ oa });
+});
+
+// 手で設定する (DOI の無い論文など)。status が空なら未判定に戻す
+entries.put('/:id/oa', async (c) => {
+  const id = parseIdParam(c.req.param('id'));
+  const body = await jsonBody(c);
+  const status = str(body.status);
+  if (status && !(OA_STATUSES as readonly string[]).includes(status)) throw new AppError('Open Access の種類が不正です。');
+  const url = str(body.url);
+  if (url && (url.length > 500 || !/^https?:\/\/[^\s]+$/i.test(url))) throw new AppError('URL は http または https で始まる形にしてください。');
+  const oa = { status: status as OaStatus, url: status && status !== 'closed' ? url : '', license: '', checkedAt: status ? todayJst() : '' };
+  await setOpenAccess(c.env.DB, id, oa);
+  return c.json({ oa });
 });
 
 entries.patch('/:id/read', async (c) => {

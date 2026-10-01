@@ -241,3 +241,20 @@ input[type="checkbox"] { accent-color: var(--accent); }
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding: 8px 10px;
   font-size: 12.5px; line-height: 1.6; color: var(--ink-2); border-radius: var(--radius); background: var(--line-soft);
 }
+
+/* ---------- Open Access ---------- */
+.oa-badge {
+  display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 4px; vertical-align: 1px;
+  font-size: 10.5px; font-weight: 700; line-height: 16px; letter-spacing: .02em; white-space: nowrap;
+  background: #E4F1EA; color: var(--r-done);
+}
+/* 別の版 (プレプリントなど) だけが読めるもの */
+.oa-badge.alt { background: transparent; box-shadow: inset 0 0 0 1px var(--r-done); }
+.dp-oa-line { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.dp-oa-line .oa-badge { margin-left: 0; }
+.dp-oa-none { color: var(--ink-3); }
+.dp-oa-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.dp-oa-edit { display: flex; flex-direction: column; gap: 6px; }
+.dp-oa-edit select, .dp-oa-edit input {
+  height: 30px; padding: 0 8px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); font: inherit; font-size: 13px;
+}

@@ -3,6 +3,7 @@ import type { Entry } from '../../../shared/types';
 import { KIND_BADGES, KIND_LABELS, PRIORITY_LABELS } from '../../../shared/types';
 import { venueOf, type ColumnKey } from '../../lib/table';
 import { VenuePills } from '../EntryCard';
+import { OaBadge } from '../OaBadge';
 
 export function renderCell(col: ColumnKey, e: Entry, projectId?: number): ReactNode {
   switch (col) {
@@ -13,6 +14,7 @@ export function renderCell(col: ColumnKey, e: Entry, projectId?: number): ReactN
         <span className="t-title" title={e.title}>
           {e.kind !== 'paper' && <span className={'kind-badge k-' + e.kind} title={KIND_LABELS[e.kind]}>{KIND_BADGES[e.kind]}</span>}
           {e.title}
+          <OaBadge e={e} />
         </span>
       );
     case 'status':

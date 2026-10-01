@@ -170,6 +170,8 @@ function EntryDialogBody({ entry, initialTags, initialProjects, initialKind, onC
         id = (await api.addEntry(e, alive)).id;
         sent = alive.map((s) => s.projectId);
       }
+      // DOI のある論文は、追加したときと DOI を変えたときに Open Access を判定する (失敗しても保存は済んでいる)
+      if (e.doi && kind === 'paper' && (!entry || entry.doi.trim() !== e.doi.trim())) await api.checkOa(id).catch(() => undefined);
       await reload();
       onSaved(id, !entry, sent);
       toast(entry ? '更新しました' : '追加しました');

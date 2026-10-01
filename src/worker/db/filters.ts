@@ -66,6 +66,7 @@ export function parseFilterQuery(v: unknown): FilterQuery {
       case 'starred': q.starred = bool(val); break;
       case 'priority': q.priority = listOf<Priority>(PRIORITIES, val); break;
       case 'unfiled': q.unfiled = bool(val); break;
+      case 'oa': q.oa = bool(val); break;
       case 'sort': q.sort = oneOf(SORT_KEYS, val); break;
       case 'sortDir': q.sortDir = oneOf(SORT_DIRS, val); break;
       case 'groupBy': q.groupBy = oneOf(GROUP_KEYS, val); break;

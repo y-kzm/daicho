@@ -121,3 +121,14 @@ describe('query helpers', () => {
     expect(describeQuery({ projectId: 999 }, () => undefined)).toEqual(['プロジェクト: (削除済み)']);
   });
 });
+
+describe('Open Access filter', () => {
+  const oa = (status: import('../../src/shared/types').OaStatus) => ({ status, url: '', license: '', checkedAt: status ? '2026-10-01' : '' });
+  const list = [entry({ id: 1, oa: oa('gold') }), entry({ id: 2, oa: oa('green') }), entry({ id: 3, oa: oa('closed') }), entry({ id: 4 }), entry({ id: 5, oa: oa('bronze') })];
+  it('keeps papers that anyone can read, including other versions', () => {
+    expect(applyQuery(list, { oa: true }, new Date()).map((e) => e.id).sort()).toEqual([1, 2, 5]);
+    expect(isFiltering({ oa: true })).toBe(true);
+    expect(isFiltering({ oa: false })).toBe(false);
+    expect(describeQuery({ oa: true }, () => undefined)).toEqual(['Open Access のみ']);
+  });
+});

@@ -9,6 +9,7 @@ import { useToast } from '../state/useToast';
 import { TagPicker } from './dialogs/TagPicker';
 import { VenuePills } from './EntryCard';
 import { DetailFiles } from './library/DetailFiles';
+import { DetailOa } from './library/DetailOa';
 import { DetailStatus } from './library/DetailStatus';
 import { DetailProjects } from './library/DetailProjects';
 import { toEntryInput } from './library/entryInput';
@@ -131,6 +132,8 @@ function DetailBody({ e, projectId, onClose, onEdit }: { e: Entry; projectId?: n
       <DetailProjects e={e} projectId={projectId} />
 
       <DetailFiles e={e} />
+
+      <DetailOa e={e} />
 
       {e.summary && (
         <section className="dp-sec e-detail open">

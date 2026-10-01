@@ -1,6 +1,6 @@
 import type {
   AppData, AttachmentKind, BulkOp, CiteState, CoreResult, DoiMetadata, DriveStatus, DuplicateGroup, EntryInput, EntryProjectInput,
-  FilterQuery, IetfStatus, LlmInput, LlmProvider, UploadSession,
+  FilterQuery, IetfStatus, LlmInput, LlmProvider, OaStatus, OpenAccess, UploadSession,
   Priority, ReadState, SummaryPromptResult, SummaryResult, TagProposal,
 } from '../shared/types';
 
@@ -88,6 +88,11 @@ export const api = {
   setFlags: (id: number, flags: { starred?: boolean; priority?: Priority }) => send('PATCH', `/entries/${id}/flags`, flags),
   touch: (id: number) => call<{ lastOpenedAt: string }>('POST', `/entries/${id}/touch`),
   bulk: (ids: number[], op: BulkOp) => call<AppData>('POST', '/entries/bulk', { ids, op }),
+  /** 1 件の Open Access を判定し直す */
+  checkOa: (id: number) => call<{ oa: OpenAccess }>('POST', `/entries/${id}/oa`, undefined, 60000),
+  setOa: (id: number, status: OaStatus, url: string) => call<{ oa: OpenAccess }>('PUT', `/entries/${id}/oa`, { status, url }),
+  /** 未判定の論文を最大 50 件判定する。remaining が 0 になるまで呼ぶ */
+  checkOaBatch: () => call<AppData & { checked: number; remaining: number }>('POST', '/entries/oa/check', undefined, 60000),
   merge: (keepId: number, removeIds: number[]) => call<AppData>('POST', '/entries/merge', { keepId, removeIds }),
 
   // プロジェクト (id ベース)

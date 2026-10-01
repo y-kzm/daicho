@@ -95,6 +95,12 @@ export function FilterPanel({ query, tags, projects, onChange }: Props) {
           <button type="button" className={star === 'false' ? 'on' : ''} aria-pressed={star === 'false'} onClick={() => onChange({ starred: false })}>なし</button>
         </div>
       </Row>
+      <Row label="Open Access">
+        <div className="seg" role="group" aria-label="Open Access">
+          <button type="button" className={!query.oa ? 'on' : ''} aria-pressed={!query.oa} onClick={() => onChange({ oa: undefined })}>すべて</button>
+          <button type="button" className={query.oa ? 'on' : ''} aria-pressed={!!query.oa} onClick={() => onChange({ oa: true })}>OA のみ</button>
+        </div>
+      </Row>
       <Row label="優先度">
         <Toggles<Priority> options={PRIORITY_ORDER} selected={query.priority}
           label={(p) => (p === 0 ? 'なし' : PRIORITY_LABELS[p])} onChange={(priority) => onChange({ priority })} />

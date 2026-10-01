@@ -1,3 +1,4 @@
+import { OaBadge } from './OaBadge';
 import type { MouseEvent } from 'react';
 import type { Entry } from '../../shared/types';
 import { KIND_BADGES, KIND_LABELS, PRIORITY_LABELS } from '../../shared/types';
@@ -59,6 +60,7 @@ export function EntryCard({ e, selected, focused, selectable = false, onClick, o
         <div className="e-title">
           {e.kind !== 'paper' && <span className={'kind-badge k-' + e.kind} title={KIND_LABELS[e.kind]}>{KIND_BADGES[e.kind]}</span>}
           {e.title}
+          <OaBadge e={e} />
           {e.year && <span className="yr mono">{e.year}</span>}
         </div>
         {e.priority > 0 && <span className={'prio p' + e.priority}>{PRIORITY_LABELS[e.priority]}</span>}

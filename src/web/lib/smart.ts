@@ -1,5 +1,5 @@
 import type { Entry, FilterQuery, KindGroupId, ReadState, SavedFilter } from '../../shared/types';
-import { KIND_GROUPS, KIND_LABELS, PRIORITY_LABELS } from '../../shared/types';
+import { isOpenAccess, KIND_GROUPS, KIND_LABELS, PRIORITY_LABELS } from '../../shared/types';
 import { compareBy } from './table';
 
 export type Builtin = 'all' | 'starred' | 'recentAdded' | 'recentOpened' | 'unfiled';
@@ -53,6 +53,7 @@ export function matches(e: Entry, q: FilterQuery, now: Date): boolean {
     if (q.tagMode === 'all' ? !q.tags.every(has) : !q.tags.some(has)) return false;
   }
   if (q.kinds?.length && !q.kinds.includes(e.kind)) return false;
+  if (q.oa && !isOpenAccess(e.oa.status)) return false;
   const cites = e.cites || {};
   const cite = q.cite;
   if (q.projectId !== undefined) {
@@ -94,11 +95,11 @@ export function countFor(entries: Entry[], q: FilterQuery, now: Date): number {
 
 export function isFiltering(q: FilterQuery): boolean {
   return !!q.search?.trim() || !!q.read?.length || !!q.tags?.length || q.projectId !== undefined || !!q.cite?.length || !!q.kinds?.length
-    || q.yearFrom !== undefined || q.yearTo !== undefined || q.starred !== undefined || !!q.priority?.length || q.unfiled === true;
+    || q.yearFrom !== undefined || q.yearTo !== undefined || q.starred !== undefined || !!q.priority?.length || q.unfiled === true || q.oa === true;
 }
 
 const FILTER_KEYS = [
-  'search', 'read', 'tags', 'tagMode', 'projectId', 'kinds', 'cite', 'yearFrom', 'yearTo', 'starred', 'priority', 'unfiled', 'sort', 'sortDir', 'groupBy',
+  'search', 'read', 'tags', 'tagMode', 'projectId', 'kinds', 'cite', 'yearFrom', 'yearTo', 'starred', 'priority', 'unfiled', 'oa', 'sort', 'sortDir', 'groupBy',
 ] as const;
 
 /** 保存フィルタとして送れる形 (既知キーのみ、空の値は落とす) */
@@ -113,7 +114,7 @@ export function toSavedQuery(q: FilterQuery): FilterQuery {
 }
 
 const NARROWING_KEYS = [
-  'search', 'read', 'tags', 'projectId', 'kinds', 'cite', 'yearFrom', 'yearTo', 'starred', 'priority', 'unfiled',
+  'search', 'read', 'tags', 'projectId', 'kinds', 'cite', 'yearFrom', 'yearTo', 'starred', 'priority', 'unfiled', 'oa',
   'addedWithinDays', 'openedOnly',
 ] as const;
 
@@ -121,7 +122,7 @@ const NARROWING_KEYS = [
 function norm(k: (typeof NARROWING_KEYS)[number], v: unknown): string {
   if (v === undefined) return '';
   // unfiled / openedOnly は false でも絞り込まない (starred: false は「★ なし」なので区別する)
-  if (v === false && (k === 'unfiled' || k === 'openedOnly')) return '';
+  if (v === false && (k === 'unfiled' || k === 'openedOnly' || k === 'oa')) return '';
   if (typeof v === 'string') return v.trim();
   if (Array.isArray(v)) return v.length ? JSON.stringify(v.map(String).sort()) : '';
   return JSON.stringify(v);
@@ -161,6 +162,7 @@ export function describeQuery(q: FilterQuery, projectName: (id: number) => strin
   if (q.starred !== undefined) out.push(q.starred ? '★ あり' : '★ なし');
   if (q.priority?.length) out.push('優先度: ' + q.priority.map((p) => (p === 0 ? 'なし' : PRIORITY_LABELS[p])).join('・'));
   if (q.unfiled) out.push('未分類のみ');
+  if (q.oa) out.push('Open Access のみ');
   return out;
 }
 
@@ -276,5 +278,6 @@ export function activeFilters(
       clear: (c) => ({ ...c, priority: without(c.priority, p) }),
     });
   }
+  if (q.oa && !base.oa) out.push({ key: 'oa', label: 'Open Access のみ', clear: (c) => ({ ...c, oa: base.oa }) });
   return out;
 }

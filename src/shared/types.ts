@@ -73,6 +73,43 @@ export interface CiteInfo {
   memo: string;
 }
 
+/**
+ * Open Access の種類 (OpenAlex の oa_status)。'' = 未判定、unknown = OpenAlex に無い
+ * gold / diamond / hybrid / bronze は出版社のサイトで読める。green は別の版 (プレプリントなど) が読める
+ */
+export const OA_STATUSES = ['gold', 'diamond', 'hybrid', 'bronze', 'green', 'closed', 'unknown'] as const;
+export type OaStatus = (typeof OA_STATUSES)[number] | '';
+
+export const OA_LABELS: Record<OaStatus, string> = {
+  '': '未判定',
+  gold: '出版社で公開 (gold)',
+  diamond: '出版社で公開・無料で掲載 (diamond)',
+  hybrid: '有料誌の中で公開 (hybrid)',
+  bronze: '出版社で読める・ライセンス不明 (bronze)',
+  green: '別の版が読める (green)',
+  closed: '公開されていない',
+  unknown: '判定できない (OpenAlex に無い)',
+};
+
+export interface OpenAccess {
+  status: OaStatus;
+  /** 読める場所 */
+  url: string;
+  license: string;
+  /** 判定した日 (YYYY-MM-DD)。未判定は空 */
+  checkedAt: string;
+}
+
+/** 誰でも読めるか (green は別の版が読める) */
+export function isOpenAccess(s: OaStatus): boolean {
+  return s === 'gold' || s === 'diamond' || s === 'hybrid' || s === 'bronze' || s === 'green';
+}
+
+/** 出版社のサイトで、出版された版が読めるか */
+export function isPublisherOpen(s: OaStatus): boolean {
+  return s === 'gold' || s === 'diamond' || s === 'hybrid' || s === 'bronze';
+}
+
 export interface Entry {
   id: number;
   added: string;
@@ -100,10 +137,12 @@ export interface Entry {
   /** key = String(projectId) */
   cites: Record<string, CiteInfo>;
   attachments: Attachment[];
+  /** Open Access の判定結果 (編集フォームではなく、別の API で変える) */
+  oa: OpenAccess;
 }
 
 /** 追加・編集フォームから送る形 (cites / starred / priority / lastOpenedAt / attachments は別 API で変える) */
-export type EntryInput = Omit<Entry, 'id' | 'added' | 'cites' | 'starred' | 'priority' | 'lastOpenedAt' | 'attachments'>;
+export type EntryInput = Omit<Entry, 'id' | 'added' | 'cites' | 'starred' | 'priority' | 'lastOpenedAt' | 'attachments' | 'oa'>;
 
 /** 追加と同時に入れるプロジェクト (POST /api/entries の projects) */
 export interface EntryProjectInput {
@@ -142,6 +181,8 @@ export interface FilterQuery {
   sort?: SortKey;
   sortDir?: 'asc' | 'desc';
   groupBy?: GroupKey;
+  /** true = Open Access の論文だけ */
+  oa?: boolean;
 }
 
 export interface SavedFilter {
